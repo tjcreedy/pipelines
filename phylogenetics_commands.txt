@@ -1,0 +1,57 @@
+
+# Copy over the references
+cp /AMM/references/GBdl_RefSeq_ColeopMT_2019-09-20.gb ./
+cp /AMM/references/GBdl_RefSeq_OtherArthMT_2019-09-20.gb ./
+cp /AMM/references/canopy_ColeopMT.gb ./
+
+# Subset by family
+subset_gb_by_taxonomy.pl -g GBdl_RefSeq_ColeopMT_2019-09-20.gb -o GBdl_RefSeq_ColeopMT_3pfamily -t family -n 3 -r -i
+subset_gb_by_taxonomy.pl -g GBdl_RefSeq_OtherArthMT_2019-09-20.gb -o GBdl_RefSeq_OtherArthMT_1pfamily -t family -n 1 -r
+
+# Clean up
+rm *_excluded.gb *_no_taxon.gb 
+
+# Concatenate the GenBank files
+cat GBdl*subset.gb > GBdl_RefSeq_allMT_subset.gb
+
+# Extract the genes from both files
+extract_genes.pl -g canopy_ColeopMT.gb GBdl_RefSeq_allMT_subset.gb -o allMT_CDS_raw/ -mincds 1 -d 
+
+# Align the genes - takes ~5 minutes
+mkdir allMT_CDS_aligned/
+for f in allMT_CDS_raw/*; do mafft --thread 1 --retree 2 --maxiterate 0 $f > allMT_CDS_aligned/${f#*/}.fa; done
+
+# Concatenate the alignments
+catfasta2phyml.pl -c -fasta allMT_CDS_aligned/* > allMT_aligned.fasta
+
+# Build a tree with fasttree - 200 seconds
+FastTree -gtr -nt < allMT_aligned.fasta > allMT_fasttree.nwk
+
+# Create a renamed version for viewing
+rename_newick_with_gb.pl -g canopy_ColeopMT.gb GBdl_RefSeq_allMT_subset.gb -t allMT_fasttree.nwk -o allMT_fasttree_RN.nwk -fields LOCUS TAXONOMY -ntax 6
+
+# Grab the otus
+cp /AMM/resources/metabarcoding/9_otus/otus_3pc.fasta ./
+
+# Build an OTU-only tree
+FastTree -gtr -nt < otus_3pc.fasta > otu_fasttree.nwk
+
+# Rename the OTU tree
+rename_newick_with_classifiers.pl -tree otu_fasttree.nwk -out otu_fasttree_RN.nwk -stringpos 9,20 -taxa order family -sintax /AMM/resources/metabarcoding/taxassign/otus_3pc_SINTAX_default.txt -RDP /AMM/resources/metabarcoding/taxassign/otus_3pc_RDP_default_usga_classified.txt -megan /AMM/resources/metabarcoding/taxassign/otus_3pc_MEGAN_default.tsv
+
+# Align the OTUs to the supermatrix
+mafft --thread 1 --addfragments otus_3pc.fasta --6merpair allMT_aligned.fasta > allMT_otus_aligned.fasta
+
+# Build a constraint alignment
+wget http://www.microbesonline.org/fasttree/TreeToConstraints.pl
+cp /AMM/resources/phylogenetics/TreeToConstraints.pl ./
+perl TreeToConstraints.pl < allMT_fasttree.nwk > allMT_fasttree_constalign.txt
+
+# Place OTUS with fasttree 430s
+FastTree -constraints allMT_fasttree_constalign.txt -nt -gtr < allMT_otus_aligned.fasta > allMT_otus_fasttree.nwk
+
+# Rename newick
+rename_newick_with_gb.pl -g canopy_ColeopMT.gb GBdl_RefSeq_allMT_subset.gb -t allMT_otus_fasttree.nwk -o allMT_otus_fasttree_RN.nwk -fields LOCUS TAXONOMY NCDS -ntax 6
+
+
+rename_newick_with_classifiers.pl -tree allMT_otus_fasttree_RN.nwk -out allMT_otus_fasttree_RN2.nwk -stringpos 9,20 -taxa order family -sintax /AMM/resources/metabarcoding/taxassign/otus_3pc_SINTAX_default.txt -RDP /AMM/resources/metabarcoding/taxassign/otus_3pc_RDP_default_usga_classified.txt -megan /AMM/resources/metabarcoding/taxassign/otus_3pc_MEGAN_default.tsv

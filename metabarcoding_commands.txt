@@ -1,0 +1,66 @@
+
+mkdir 1_demux
+cutadapt -g T4=^AAGAGG -g T9=^AATCGC -g T11=^AGCTAC -G T4=^AAGAGG -G T9=^AATCGC -G T11=^AGCTAC -o 1_demux/{name1}-{name2}_R1.fastq -p 1_demux/{name1}-{name2}_R2.fastq 0_rawsequences/Lib1_R1.fastq 0_rawsequences/Lib1_R2.fastq
+cutadapt -g T6=^AACACC -g T10=^AATCGC -g T16=^GAGTCA -G T6=^AACACC -G T10=^AATCGC -G T16=^GAGTCA -o 1_demux/{name1}-{name2}_R1.fastq -p 1_demux/{name1}-{name2}_R2.fastq 0_rawsequences/Lib2_R1.fastq 0_rawsequences/Lib2_R2.fastq
+cutadapt -g T7=^AAGAGG -g T12=^AATCGC -g T14=^AGCTAC -G T7=^AAGAGG -G T12=^AATCGC -G T14=^AGCTAC -o 1_demux/{name1}-{name2}_R1.fastq -p 1_demux/{name1}-{name2}_R2.fastq 0_rawsequences/Lib3_R1.fastq 0_rawsequences/Lib3_R2.fastq
+cutadapt -g T8=^AACACC -g T13=^AAGCCT -g T15=^AGCTAC -G T8=^AACACC -G T13=^AAGCCT -G T15=^AGCTAC -o 1_demux/{name1}-{name2}_R1.fastq -p 1_demux/{name1}-{name2}_R2.fastq 0_rawsequences/Lib4_R1.fastq 0_rawsequences/Lib4_R2.fastq
+cd 1_demux/
+for f in *; do s1=${f%-*} ; s2=${f%_*} ; s2=${s2#*-}; if [ $s1 != $s2 ]; then rm $f; else mv $f ${f#*-}; fi; done
+rm unknown*
+cd ../
+
+mkdir 2_trimmed
+while read s; do cutadapt -g ^CCNGAYATRGCNTTYCCNCG -G ^TANACYTCNGGRTGNCCRAARAAYCA -o 2_trimmed/${s}_R1.fastq -p 2_trimmed/${s}_R2.fastq --discard-untrimmed 1_demux/${s}_R1.fastq 1_demux/${s}_R2.fastq; done < <(ls 1_demux/ | cut -d_ -f1 | sort | uniq)
+while read s; do cutadapt -j 20 -g ^CCNGAYATRGCNTTYCCNCG -G ^TANACYTCNGGRTGNCCRAARAAYCA -o 1_trimmed/${s}_R1.fastq -p 1_trimmed/${s}_R2.fastq --discard-untrimmed 0_demux/${s}_R1.fq 0_demux/${s}_R2.fq; done < <(for f in 0_demux/*; do s1=${f#*/}; echo ${s1%_*}; done | sort | uniq)
+
+
+mkdir 3_merged
+while read l; do pear -f 2_trimmed/${l}_R1.fastq -r 2_trimmed/${l}_R2.fastq -o 3_merged/$l -q 26 -v 100; done < <(ls 2_trimmed/ | cut -d_ -f1 | sort | uniq)
+while read l; do pear -f 1_trimmed/${l}_R1.fastq -r 1_trimmed/${l}_R2.fastq -o 2_merged/$l -q 26 -v 60 -j 20; done < <(for f in 1_trimmed/*; do s1=${f#*/}; echo ${s1%_*}; done | sort | uniq)
+cd 3_merged/
+rm *discarded* *unassembled* && rename -e "s/assembled\.//" *
+
+for f in *; do sed -e "s/\(^@D00.*\) .*$/\1;sample=${f%.*};/" $f >> ../4_mbc_concat.fastq; done
+cd ../
+
+vsearch --fastx_filter 4_mbc_concat.fastq --fastq_maxee 1 --fastaout 4_mbc_concat.fasta
+
+vsearch --derep_fulllength 4_mbc_concat.fasta --output 5_mbc_derep.fasta --sizeout --relabel uniq
+
+vsearch --cluster_unoise 5_mbc_derep.fasta --minsize 4 --unoise_alpha 2 --centroids 6_mbc_denoise.fasta
+
+vsearch --fastx_filter 6_mbc_denoise.fasta --fastq_minlen 418 --fastq_maxlen 418 -fastaout 7_mbc_indelfil.fasta
+
+filtertranslate.py 7_mbc_indelfil.fasta 5
+rm *transfail.fa
+mv 7_mbc_indelfil_transpass.fa 8_mbc_transpass.fasta
+
+vsearch --uchime3_denovo 8_mbc_transpass.fasta --nonchimeras 9_mbc_final.fasta
+
+mkdir 9_otus
+
+vsearch --cluster_size 9_mbc_final.fasta --sizein --relabel otu --id 0.97 --centroids 9_otus/otus_3pc.fasta
+
+swarm -w 9_otus/otus_link.fasta -d 1 -z 9_mbc_final.fasta
+
+vsearch --rereplicate 9_mbc_final.fasta --relabel rerep --output 9_mbc_final_rerep.fasta
+mkdir 9_otus/crop_s
+cd 9_otus/crop_s
+crop -b 40 -z 400 -s -r 0 -i ../../9_mbc_final_rerep.fasta -o otus_crop_s
+rename -e "s/cluster\.//" *.cluster.fasta
+rm ../../*unique* Likelihood* *cluster* *log
+
+vsearch --usearch_global 4_mbc_concat.fasta -db 9_otus/otus_3pc.fasta -id 0.97 -uc reads_search_otus_3pc.uc
+vsearch --usearch_global 4_mbc_concat.fasta -db 9_otus/otus_3pc.fasta -id 0.97 -otutabout reads_map_otus_3pc.tsv
+
+blastn -db /AMM/blastdb/nt -query 9_otus/otus_3pc.fasta -outfmt 5 -out 9_otus/otus_3pc_nt.blast.xml -num_threads 1 -evalue 0.001
+
+blastn -query 9_otus/otus_3pc.fasta -subject /AMM/references/canopy_Coleop_COX1_sI.fa -outfmt 6 -out 9_otus/otus_3pc_Coleop_COX1_sI.blast -num_threads 1 -evalue 0.001 -perc_identity 97
+
+vsearch --usearch_global 4_mbc_concat.fasta -db /AMM/references/canopy_Coleop_COX1_sI.fa -id 0.97 -otutabout reads_map_Coleop_COX1.txt
+
+usearch110 -sintax 3_denoise.fa -db /av/references/MIDORI_LONGEST_20180221_COI_SINTAX.udb -tabbedout 3_midori.sintax.tsv -strand both -sintax_cutoff 1
+
+python3 ../filter_fasta_by_sintax.py -f 4_indelfil.fa -s 4_indelfil_sintax_midori.txt -t o:Coleoptera > 5_coleoptera.fa
+
+

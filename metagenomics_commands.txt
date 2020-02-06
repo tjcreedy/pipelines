@@ -1,0 +1,29 @@
+
+# Copy files over
+cp -r /AMM/resources/metagenomics/* ./
+
+
+mkdir 1_trimmed
+sed -e "s/INDEX/ACAGTG/" TruSeq_trimseqs.fa > 1_trimmed/TruSeq_trimseqs.fa
+Trimmomatic PE -threads 1 -phred33 -trimlog 1_trimmed/log.txt 0_rawsequences/shotgunlib_R1.fq 0_rawsequences/shotgunlib_R2.fq 1_trimmed/shotgunlib_R1.paired.fq 1_trimmed/shotgunlib_R1.unpaired.fq 1_trimmed/shotgunlib_R2.paired.fq 1_trimmed/shotgunlib_R2.unpaired.fq ILLUMINACLIP:1_trimmed/TruSeq_trimseqs.fa:2:30:10
+
+mkdir 2_filtered/ 2_blastdb/
+cd 2_blastdb/
+cp /AMM/references/GBdl_RefSeq_ColeopMT_2019-09-20.fasta ./
+makeblastdb -in GBdl_RefSeq_ColeopMT_2019-09-20.fasta -dbtype nucl -out cmr
+cd ../
+
+for d in R1 R2; do fastq_to_fasta -i 1_trimmed/shotgunlib_$d.paired.fq -o 2_filtered/shotgunlib_$d.paired.fa; done
+for d in R1 R2; do blastn -db 2_blastdb/cmr -query 2_filtered/shotgunlib_$d.paired.fa -out 2_filtered/shotgunlib_$d.blast -max_target_seqs 1 -outfmt 6 -dust no -evalue 1e-5 -num_threads 1; done
+
+cd 2_filtered/
+MMGblastfilter -fastq ../1_trimmed/shotgunlib_R1.paired.fq -fastq ../1_trimmed/shotgunlib_R2.paired.fq -blast shotgunlib_R1.blast -blast shotgunlib_R2.blast -keep
+cd ../
+
+# Ray 2 minutes, SPAdes 
+mkdir 3_assemblies
+mpiexec -n 1 Ray -p 2_filtered/shotgunlib_R1.paired.filtered.fq 2_filtered/shotgunlib_R2.paired.filtered.fq -o 3_assemblies/ray -amos -minimum-contig-length 1000 -k 61
+spades.py --meta -1 2_filtered/shotgunlib_R1.paired.filtered.fq -2 2_filtered/shotgunlib_R2.paired.filtered.fq -o 3_assemblies/spades -t 1 -k 21,33,55,77,99,127
+
+blastn -query 3_assemblies/ray/Contigs.fasta -subject /AMM/references/canopy_Coleop_COX1_sI.fa -outfmt 6 -perc_identity 90
+blastn -query 3_assemblies/spades/contigs.fasta -subject /AMM/references/canopy_Coleop_COX1_sI.fa -outfmt 6 -perc_identity 90

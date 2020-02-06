@@ -1,0 +1,205 @@
+# Switch to password authentication
+sudo sed -i "/^[^#]*PasswordAuthentication[[:space:]]no/c\PasswordAuthentication yes" /etc/ssh/sshd_config
+sudo service sshd restart
+
+# Change root password
+sudo passwd ubuntu
+
+# Set up users and passwords
+echo \
+"thomas
+anna
+manolis
+victor
+andreas" > users.txt
+while read u; do
+	sudo adduser --disabled-password --gecos "" $u
+	echo $u:$u"123" | sudo chpasswd
+	sudo passwd -e $u
+done < users.txt
+
+# Assign sudoers
+sudo usermod -aG sudo thomas
+
+# Change hostname
+sudo hostnamectl set-hostname ammserver.localdomain
+cat /etc/hosts | sudo tee /etc/hosts_bak
+sudo sed -i -e "s/^127\.0\.0\.1.*$/127\.0\.0\.1 ammserver.localdomain ammserver localhost4 localhost4\.localdomain4/" /etc/hosts
+
+
+# Set up directories
+sudo mkdir /usr/local/deb/
+sudo mkdir /usr/local/script/
+
+# Repo installation
+sudo apt update && sudo apt upgrade -y
+sudo apt install build-essential pkg-config autoconf python3-pip unzip groff libgsl-dev rename default-jre zip -y
+
+# Script module installations
+sudo apt install bioperl libdbd-sqlite3-perl libjson-perl perl-doc python3-biopython python-scipy libarray-utils-perl -y
+
+# Cutadapt
+sudo -H python3 -m pip install cutadapt
+
+# Mafft
+sudo wget -P /usr/local/deb/ https://mafft.cbrc.jp/alignment/software/mafft_7.450-1_amd64.deb
+sudo apt install /usr/local/deb/mafft_7.450-1_amd64.deb 
+
+# Alan
+sudo wget -P /usr/local/bin/ https://raw.githubusercontent.com/mpdunne/alan/master/alan
+sudo chmod a+x /usr/local/bin/alan
+
+# FastQC
+cd /usr/local/src/ 
+sudo wget https://www.bioinformatics.babraham.ac.uk/projects/fastqc/fastqc_v0.11.8.zip
+sudo unzip fastqc_v0.11.8.zip
+sudo chmod a+x FastQC/fastqc
+sudo ln -s /usr/local/src/FastQC/fastqc /usr/local/bin/fastqc
+
+# FastqE
+sudo -H python3 -m pip install fastqe
+
+# PEAR
+cd /usr/local/src/
+sudo wget http://www.tjcreedy.co.uk/wp-content/uploads/2019/09/pear-0.9.11-linux-x86_64.tar.gz ##### REPLACE
+sudo tar -xzf pear-0.9.11-linux-x86_64.tar.gz
+cd pear-0.9.11-linux-x86_64
+sudo cp bin/pear /usr/local/bin/
+sudo gzip man/pear.1
+sudo cp man/pear.1.gz /usr/share/man/man1/
+
+# Pairfq
+# requires libdbd-sqlite3-perl
+sudo curl -sL cpanmin.us | sudo perl - git://github.com/sestaton/Pairfq.git
+
+# Fastx toolkit
+cd /usr/local/src/
+
+sudo wget https://github.com/agordon/libgtextutils/releases/download/0.7/libgtextutils-0.7.tar.gz
+sudo tar -xzf libgtextutils-0.7.tar.gz
+cd libgtextutils-0.7
+sudo sed -i '47s/input_stream/static_cast<bool>(input_stream)/' src/gtextutils/text_line_reader.cpp
+sudo ./configure
+sudo make
+sudo make install
+cd ../
+
+sudo wget https://github.com/agordon/fastx_toolkit/releases/download/0.0.14/fastx_toolkit-0.0.14.tar.bz2
+sudo tar -xjf fastx_toolkit-0.0.14.tar.bz2
+cd fastx_toolkit-0.0.14
+sudo wget https://github.com/agordon/fastx_toolkit/files/1182724/fastx-toolkit-gcc7-patch.txt
+sudo patch -p1 < fastx-toolkit-gcc7-patch.txt
+sudo ./configure
+sudo make
+sudo make install
+cd ../
+
+# VSEARCH
+# requires packages autoconf groff
+
+cd /usr/local/src
+
+sudo wget https://github.com/torognes/vsearch/archive/v2.13.7.tar.gz
+sudo tar xzf v2.13.7.tar.gz
+cd vsearch-2.13.7
+sudo ./autogen.sh
+sudo ./configure
+sudo make
+sudo make install
+cd ../
+
+# Numtfilter
+cd /usr/local/bin/
+sudo wget https://raw.githubusercontent.com/tjcreedy/numtfilter/master/filtertranslate.py
+sudo chmod a+x filtertranslate.py
+
+# SWARM
+
+cd /usr/local/src
+
+sudo git clone https://github.com/torognes/swarm.git
+cd swarm/
+sudo make
+sudo cp bin/swarm /usr/local/bin/
+
+cd ~/
+gzip -c /usr/local/src/man/swarm.1 > swarm.1.gz
+sudo mv swarm.1.gz /usr/share/man/man1/
+
+# CROP
+# requires package libgsl-dev
+
+cd /usr/local/src
+
+sudo git clone https://github.com/tingchenlab/CROP.git
+cd CROP/
+sudo make
+sudo ln -s /usr/local/src/CROP/CROPLinux /usr/local/bin/crop
+
+# BLAST
+cd /usr/local/src/
+
+BLAST_VERSION="2.9.0"
+sudo wget "ftp://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/${BLAST_VERSION}/ncbi-blast-${BLAST_VERSION}+-x64-linux.tar.gz"
+sudo tar -zxf ncbi-blast-${BLAST_VERSION}+-x64-linux.tar.gz
+sudo cp ncbi-blast-${BLAST_VERSION}+/bin/* /usr/local/bin/
+
+# Trimmomatic
+cd /usr/local/src
+sudo wget http://www.usadellab.org/cms/uploads/supplementary/Trimmomatic/Trimmomatic-0.39.zip
+sudo unzip Trimmomatic-0.39.zip
+echo "alias Trimmomatic='java -jar /usr/local/src/Trimmomatic-0.39/trimmomatic-0.39.jar'" | sudo tee -a /etc/profile.d/aliases.sh
+
+# MMGblastfilter
+sudo wget -O /usr/local/bin/MMGblastfilter https://raw.githubusercontent.com/tjcreedy/MMGscripts/master/MMGblastfilter
+sudo chmod a+x /usr/local/bin/MMGblastfilter
+
+# Ray and MPIexec
+sudo apt install ray
+
+# SPADES
+cd /usr/local/src/
+sudo wget http://cab.spbu.ru/files/release3.13.1/SPAdes-3.13.1-Linux.tar.gz
+sudo tar -xzf SPAdes-3.13.1-Linux.tar.gz
+cd SPAdes-3.13.1-Linux/bin/
+for f in *; do sudo ln -s /usr/local/src/SPAdes-3.13.1-Linux/bin/$f /usr/local/bin/$f; done
+ 
+# Biotools scripts
+# requires bioperl libarray-utils-perl
+sudo wget -O /usr/local/bin/subset_gb_by_taxonomy.pl https://raw.githubusercontent.com/tjcreedy/biotools/master/subset_gb_by_taxonomy.pl
+sudo wget -O /usr/local/bin/extract_genes.pl https://raw.githubusercontent.com/tjcreedy/biotools/master/extract_genes.pl
+sudo wget -O /usr/local/bin/rename_newick_with_gb.pl https://raw.githubusercontent.com/tjcreedy/biotools/master/rename_newick_with_gb.pl
+sudo wget -O /usr/local/bin/rename_newick_with_classifiers.pl https://raw.githubusercontent.com/tjcreedy/biotools/master/rename_newick_with_classifiers.pl
+sudo chmod a+x /usr/local/bin/*.pl
+
+# Alignment concatenation
+
+sudo wget -P /usr/local/bin/ https://raw.githubusercontent.com/nylander/catfasta2phyml/master/catfasta2phyml.pl
+sudo chmod a+x /usr/local/bin/catfasta2phyml.pl
+
+# FastTree
+cd /usr/local/bin/
+sudo wget http://www.microbesonline.org/fasttree/FastTree
+sudo wget http://www.microbesonline.org/fasttree/FastTreeMP
+sudo chmod a+x FastTree*
+
+# RAxML
+cd /usr/local/src/
+sudo git clone https://github.com/stamatak/standard-RAxML.git
+cd standard-RAxML
+sudo make -f Makefile.gcc
+sudo make -f Makefile.SSE3.gcc
+sudo make -f Makefile.PTHREADS.gcc
+sudo make -f Makefile.SSE3.PTHREADS.gcc
+for f in raxmlHPC*; do sudo ln -s /usr/local/src/standard-RAxML/$f /usr/local/bin/$f; done
+
+#tRNAscan-SE
+sudo apt-get install infernal infernal-doc
+cd /usr/local/src/
+sudo wget http://trna.ucsc.edu/software/trnascan-se-2.0.5.tar.gz
+sudo tar -xzf trnascan-se-2.0.5.tar.gz
+cd tRNAscan-SE-2.0
+sudo ./configure
+sudo make
+sudo make install
+sudo ln -s /usr/lib/infernal/cmscan /usr/local/bin/cmscan
