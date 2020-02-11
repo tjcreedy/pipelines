@@ -9,34 +9,42 @@ for f in *; do s1=${f%-*} ; s2=${f%_*} ; s2=${s2#*-}; if [ $s1 != $s2 ]; then rm
 rm unknown*
 cd ../
 
-mkdir 2_trimmed
-while read s; do cutadapt -g ^CCNGAYATRGCNTTYCCNCG -G ^TANACYTCNGGRTGNCCRAARAAYCA -o 2_trimmed/${s}_R1.fastq -p 2_trimmed/${s}_R2.fastq --discard-untrimmed 1_demux/${s}_R1.fastq 1_demux/${s}_R2.fastq; done < <(ls 1_demux/ | cut -d_ -f1 | sort | uniq)
-while read s; do cutadapt -j 20 -g ^CCNGAYATRGCNTTYCCNCG -G ^TANACYTCNGGRTGNCCRAARAAYCA -o 1_trimmed/${s}_R1.fastq -p 1_trimmed/${s}_R2.fastq --discard-untrimmed 0_demux/${s}_R1.fq 0_demux/${s}_R2.fq; done < <(for f in 0_demux/*; do s1=${f#*/}; echo ${s1%_*}; done | sort | uniq)
+# A command for running trimming on paired files in a loop. Assumes _R[12].fq. Make sure to check directory names and insert any project names into the for loop to ensure you don't run on anyone else's files. -g is forward, -G is reverse primer
 
+mkdir 1_trimmed
+while read s; do cutadapt -j 20 -g CCNGAYATRGCNTTYCCNCG -G TANACYTCNGGRTGNCCRAARAAYCA -o 1_trimmed/${s}_R1.fastq -p 1_trimmed/${s}_R2.fastq --discard-untrimmed 0_demux/${s}_R1.fq 0_demux/${s}_R2.fq; done < <(for f in 0_demux/*.fq; do s1=${f#*/}; echo ${s1%_*}; done | sort | uniq)
 
-mkdir 3_merged
-while read l; do pear -f 2_trimmed/${l}_R1.fastq -r 2_trimmed/${l}_R2.fastq -o 3_merged/$l -q 26 -v 100; done < <(ls 2_trimmed/ | cut -d_ -f1 | sort | uniq)
+# Running merging
+mkdir 2_merged
 while read l; do pear -f 1_trimmed/${l}_R1.fastq -r 1_trimmed/${l}_R2.fastq -o 2_merged/$l -q 26 -v 60 -j 20; done < <(for f in 1_trimmed/*; do s1=${f#*/}; echo ${s1%_*}; done | sort | uniq)
-cd 3_merged/
+cd 2_merged/
 rm *discarded* *unassembled* && rename -e "s/assembled\.//" *
 
+# Concatenating
 for f in *; do sed -e "s/\(^@D00.*\) .*$/\1;sample=${f%.*};/" $f >> ../4_mbc_concat.fastq; done
 cd ../
 
+# Quality filter
 vsearch --fastx_filter 4_mbc_concat.fastq --fastq_maxee 1 --fastaout 4_mbc_concat.fasta
 
+# Dereplication
 vsearch --derep_fulllength 4_mbc_concat.fasta --output 5_mbc_derep.fasta --sizeout --relabel uniq
 
+# Denoising
 vsearch --cluster_unoise 5_mbc_derep.fasta --minsize 4 --unoise_alpha 2 --centroids 6_mbc_denoise.fasta
 
+# Length filtering
 vsearch --fastx_filter 6_mbc_denoise.fasta --fastq_minlen 418 --fastq_maxlen 418 -fastaout 7_mbc_indelfil.fasta
 
+# Translation filtering
 filtertranslate.py 7_mbc_indelfil.fasta 5
 rm *transfail.fa
 mv 7_mbc_indelfil_transpass.fa 8_mbc_transpass.fasta
 
+# Chimera filtering
 vsearch --uchime3_denovo 8_mbc_transpass.fasta --nonchimeras 9_mbc_final.fasta
 
+# OTU clustering
 mkdir 9_otus
 
 vsearch --cluster_size 9_mbc_final.fasta --sizein --relabel otu --id 0.97 --centroids 9_otus/otus_3pc.fasta
