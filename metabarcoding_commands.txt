@@ -21,6 +21,7 @@ cd 2_merged/
 rm *discarded* *unassembled* && rename -e "s/assembled\.//" *
 
 # Concatenating
+# Important note: change @D00 in the sed command for the start of the headers of your sequences (run head file.fastq). Try and use ~4 characters to avoid quality lines starting with @ (rare, but it happens).
 for f in *; do sed -e "s/\(^@D00.*\) .*$/\1;sample=${f%.*};/" $f >> ../4_mbc_concat.fastq; done
 cd ../
 
