@@ -62,7 +62,7 @@ rm ../../*unique* Likelihood* *cluster* *log
 vsearch --usearch_global 4_mbc_concat.fasta -db 9_otus/otus_3pc.fasta -id 0.97 -uc reads_search_otus_3pc.uc
 vsearch --usearch_global 4_mbc_concat.fasta -db 9_otus/otus_3pc.fasta -id 0.97 -otutabout reads_map_otus_3pc.tsv
 
-blastn -db /AMM/blastdb/nt -query 9_otus/otus_3pc.fasta -outfmt 5 -out 9_otus/otus_3pc_nt.blast.xml -num_threads 1 -evalue 0.001
+blastn -db <path to nt> -query 9_otus/otus_3pc.fasta -outfmt 5 -out 9_otus/otus_3pc_nt.blast.xml -num_threads 1 -evalue 0.001
 
 blastn -query 9_otus/otus_3pc.fasta -subject /AMM/references/canopy_Coleop_COX1_sI.fa -outfmt 6 -out 9_otus/otus_3pc_Coleop_COX1_sI.blast -num_threads 1 -evalue 0.001 -perc_identity 97
 
