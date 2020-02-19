@@ -22,51 +22,51 @@ rm *discarded* *unassembled* && rename -e "s/assembled\.//" *
 
 # Concatenating
 # Important note: change @D00 in the sed command for the start of the headers of your sequences (run head file.fastq). Try and use ~4 characters to avoid quality lines starting with @ (rare, but it happens).
-for f in *; do sed -e "s/\(^@D00.*\) .*$/\1;sample=${f%.*};/" $f >> ../4_mbc_concat.fastq; done
+for f in *; do sed -e "s/\(^@D00.*\) .*$/\1;sample=${f%.*};/" $f >> ../3_mbc_concat.fastq; done
 cd ../
 
 # Quality filter
-vsearch --fastx_filter 4_mbc_concat.fastq --fastq_maxee 1 --fastaout 4_mbc_concat.fasta
+vsearch --fastx_filter 3_mbc_concat.fastq --fastq_maxee 1 --fastaout 3_mbc_concat.fasta
 
 # Dereplication
-vsearch --derep_fulllength 4_mbc_concat.fasta --output 5_mbc_derep.fasta --sizeout --relabel uniq
+vsearch --derep_fulllength 3_mbc_concat.fasta --output 4_mbc_derep.fasta --sizeout --relabel uniq
 
 # Denoising
-vsearch --cluster_unoise 5_mbc_derep.fasta --minsize 4 --unoise_alpha 2 --centroids 6_mbc_denoise.fasta
+vsearch --cluster_unoise 4_mbc_derep.fasta --minsize 4 --unoise_alpha 2 --centroids 5_mbc_denoise.fasta
 
 # Length filtering
-vsearch --fastx_filter 6_mbc_denoise.fasta --fastq_minlen 418 --fastq_maxlen 418 -fastaout 7_mbc_indelfil.fasta
+vsearch --fastx_filter 5_mbc_denoise.fasta --fastq_minlen 418 --fastq_maxlen 418 -fastaout 6_mbc_indelfil.fasta
 
 # Translation filtering
-filtertranslate.py 7_mbc_indelfil.fasta 5
+filtertranslate.py 6_mbc_indelfil.fasta 5
 rm *transfail.fa
-mv 7_mbc_indelfil_transpass.fa 8_mbc_transpass.fasta
+mv 6_mbc_indelfil_transpass.fa 7_mbc_transpass.fasta
 
 # Chimera filtering
-vsearch --uchime3_denovo 8_mbc_transpass.fasta --nonchimeras 9_mbc_final.fasta
+vsearch --uchime3_denovo 7_mbc_transpass.fasta --nonchimeras 8_mbc_final.fasta
 
 # OTU clustering
-mkdir 9_otus
+mkdir 8_otus
 
-vsearch --cluster_size 9_mbc_final.fasta --sizein --relabel otu --id 0.97 --centroids 9_otus/otus_3pc.fasta
+vsearch --cluster_size 8_mbc_final.fasta --sizein --relabel otu --id 0.97 --centroids 8_otus/otus_3pc.fasta
 
-swarm -w 9_otus/otus_link.fasta -d 1 -z 9_mbc_final.fasta
+swarm -w 8_otus/otus_link.fasta -d 1 -z 8_mbc_final.fasta
 
-vsearch --rereplicate 9_mbc_final.fasta --relabel rerep --output 9_mbc_final_rerep.fasta
-mkdir 9_otus/crop_s
-cd 9_otus/crop_s
-crop -b 40 -z 400 -s -r 0 -i ../../9_mbc_final_rerep.fasta -o otus_crop_s
+vsearch --rereplicate 8_mbc_final.fasta --relabel rerep --output 8_mbc_final_rerep.fasta
+mkdir 8_otus/crop_s
+cd 8_otus/crop_s
+crop -b 40 -z 400 -s -r 0 -i ../../8_mbc_final_rerep.fasta -o otus_crop_s
 rename -e "s/cluster\.//" *.cluster.fasta
 rm ../../*unique* Likelihood* *cluster* *log
 
-vsearch --usearch_global 4_mbc_concat.fasta -db 9_otus/otus_3pc.fasta -id 0.97 -uc reads_search_otus_3pc.uc
-vsearch --usearch_global 4_mbc_concat.fasta -db 9_otus/otus_3pc.fasta -id 0.97 -otutabout reads_map_otus_3pc.tsv
+vsearch --usearch_global 3_mbc_concat.fasta -db 8_otus/otus_3pc.fasta -id 0.97 -uc reads_search_otus_3pc.uc
+vsearch --usearch_global 3_mbc_concat.fasta -db 8_otus/otus_3pc.fasta -id 0.97 -otutabout reads_map_otus_3pc.tsv
 
-blastn -db <path to nt> -query 9_otus/otus_3pc.fasta -outfmt 5 -out 9_otus/otus_3pc_nt.blast.xml -num_threads 1 -evalue 0.001
+blastn -db <path to nt> -query 8_otus/otus_3pc.fasta -outfmt 5 -out 8_otus/otus_3pc_nt.blast.xml -num_threads 1 -evalue 0.001
 
-blastn -query 9_otus/otus_3pc.fasta -subject /AMM/references/canopy_Coleop_COX1_sI.fa -outfmt 6 -out 9_otus/otus_3pc_Coleop_COX1_sI.blast -num_threads 1 -evalue 0.001 -perc_identity 97
+blastn -query 8_otus/otus_3pc.fasta -subject /AMM/references/canopy_Coleop_COX1_sI.fa -outfmt 6 -out 8_otus/otus_3pc_Coleop_COX1_sI.blast -num_threads 1 -evalue 0.001 -perc_identity 97
 
-vsearch --usearch_global 4_mbc_concat.fasta -db /AMM/references/canopy_Coleop_COX1_sI.fa -id 0.97 -otutabout reads_map_Coleop_COX1.txt
+vsearch --usearch_global 3_mbc_concat.fasta -db /AMM/references/canopy_Coleop_COX1_sI.fa -id 0.97 -otutabout reads_map_Coleop_COX1.txt
 
 usearch110 -sintax 3_denoise.fa -db /av/references/MIDORI_LONGEST_20180221_COI_SINTAX.udb -tabbedout 3_midori.sintax.tsv -strand both -sintax_cutoff 1
 
