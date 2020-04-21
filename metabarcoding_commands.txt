@@ -101,17 +101,17 @@ swarm -w otus.fasta -d 1 -z 8_mbc_final.fasta
 ##                       ##
 
   # Standard approach generating standard table
-vsearch --usearch_global 4_mbc_concat.fasta -db otus.fasta -id 0.97 -otutabout reads_map.tsv
+vsearch --usearch_global 3_mbc_concat.fasta -db otus.fasta -id 0.97 -otutabout reads_map.tsv
 
   # Alternative approach generating detailed searching output
-vsearch --usearch_global 4_mbc_concat.fasta -db otus.fasta -id 0.97 -uc reads_search.uc
+vsearch --usearch_global 3_mbc_concat.fasta -db otus.fasta -id 0.97 -uc reads_search.uc
 
 ##                                ##
 ## MAPPING READS TO REFERENCE SET ##
 ##                                ##
 
   # Only useful if you don't expect to get or don't care about anything not in your reference set
-vsearch --usearch_global 4_mbc_concat.fasta -db references.fasta -id 0.97 -otutabout reads_map_reference.tsv
+vsearch --usearch_global 3_mbc_concat.fasta -db references.fasta -id 0.97 -otutabout reads_map_reference.tsv
 
 ##                     ##
 ## TAXONOMY ASSIGNMENT ##
