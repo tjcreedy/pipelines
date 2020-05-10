@@ -36,6 +36,7 @@ cd ../
 samples=$(for f in 2_merged/*.fastq; do s1=${f##*/}; echo ${s1%.*}; done | sort | uniq)
 echo $samples
 
+  # Do concatenation
   # Important note: change @D00 in the sed command for the start of the headers of your sequences (run head file.fastq). 
   # Try and use >=~4 characters to avoid quality lines starting with @ (rare, but it happens).
 
@@ -52,6 +53,7 @@ for s in $samples; do sed -e "s/\(^@D00.*\) .*$/\1;sample=$s;/" 2_merged/$s.fast
 # have reads of a specific species or set of species for which you already have barcodes. This is totally irrelevant if
 # you're doing metabarcoding where you both expect and are interested in OTUs of unknown identity
 
+vsearch --fastx_filter 3_mbc_concat.fastq --fastq_maxee 1 --fastaout 3_mbc_concat.fasta
 vsearch --usearch_global 3_mbc_concat.fasta -db references.fasta -id 0.97 -otutabout reads_map_reference.tsv
 
 # If you have done this step, you are now done and you would analyse the output tsv. Everything else would be irrelevant.
