@@ -66,11 +66,11 @@ vsearch --usearch_global 3_mbc_concat.fasta -db references.fasta -id 0.97 -otuta
 
 vsearch --fastx_filter 3_mbc_concat.fastq --fastq_maxee 1 --fastaout 3_mbc_concat.fasta
 
+    # Remember, the file 3_mbc_concat.fasta is important and will be used later!
+
 ### Dereplication ###
 
 vsearch --derep_fulllength 3_mbc_concat.fasta --output 4_mbc_derep.fasta --sizeout --relabel uniq
-
-  # Remember, the file 4_mbc_derep.fasta is important and will be used later!
 
 ### Denoising ###
 
