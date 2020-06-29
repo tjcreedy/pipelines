@@ -83,6 +83,7 @@ vsearch --fastx_filter 5_mbc_denoise.fasta --fastq_minlen 418 --fastq_maxlen 418
 ### Translation filtering ##
   
   # Run the filtering (5 is the translation table)
+  # If it can't find filtertranslate, run `python3 -m pip install NUMTdumper`
 filtertranslate.py 6_mbc_indelfil.fasta 5
 
   # Remove the ones that failed
