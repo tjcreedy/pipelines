@@ -14,6 +14,10 @@ cd ../
 
 # Quality filter
 mkdir 3_filtered
-for f in 2_merged/*.fastq; do o=${f%.fastq}.fasta; vsearch --fastx_filter $f --fastq_maxee 1 --fastaout 3_filtered/${f#*/}; done
+for f in 2_merged/*.fastq; do o=${f%.fastq}.fasta; vsearch --fastx_filter $f --fastq_maxee 1 --fastaout 3_filtered/${o#*/}; done
 
 # Then run NAPselect on the files in 3_filtered
+# If you want to run on multiple different blasttargets:
+# 1. create a tab-separated table with the first column your sequence names and the second the taxon to use
+# 2. where this file is called taxon.tsv, run this:
+cut -f2 taxon.tsv | sort | uniq | while read t; do files=$(grep $t taxon.tsv | cut -f1 | while read f; do echo "3_filtered/$f.fasta"; done); NAPselect -threads 30 -seqlength 418 -out 4_barcodes/ -blastpath /db/blastdb-2019-10-21/nt -blasttarget $t -verbose $files; done
