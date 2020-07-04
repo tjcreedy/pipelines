@@ -16,8 +16,7 @@ mkdir 1_trimmed
 for s in $samples; do cutadapt -j 20 -g CCNGAYATRGCNTTYCCNCG -G TANACYTCNGGRTGNCCRAARAAYCA -o 1_trimmed/${s}_R1.fastq -p 1_trimmed/${s}_R2.fastq --discard-untrimmed 0_demux/${s}_R1.fastq 0_demux/${s}_R2.fastq 2>&1 | tee -a trim_report.txt; done
 
     # To get the counts of reads in each file in a tsv
-for s in $samples; do c=$(for d in R1 R2; do grep -c '^+$' 1_trimmed/${s}_$d.fastq; done); echo -e "$s\t${c/$'\n'/$'\t'}"; done > trim_outcounts.tsv
-
+for s in $samples; do for d in R1 R2; do c=$(grep -c '^+$' 1_trimmed/${s}_$d.fastq); echo -e "$s\t$d\t$c"; done; done > trim_outcounts.tsv
 
 ### Run merging on paired files in a loop. ###
   # Get a list of unique samples like above
