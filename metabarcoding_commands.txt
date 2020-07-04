@@ -36,7 +36,7 @@ rename -e "s/assembled\.//" *
 cd ../
     
     # To get the counts of reads in each file in a tsv
-for s in $samples; do c=$(for d in R1 R2; do grep -c '^+$' 2_merged/${s}_$d.fastq; done); echo -e "$s\t${c/$'\n'/$'\t'}"; done > merge_outcounts.tsv
+for s in $samples; do c=$(grep -c '^+$' 2_merged/$s.fastq); echo -e "$s\t$c"; done > merge_outcounts.tsv
 
 ### Concatenating ###
   # Get a list of unique samples similar to above
