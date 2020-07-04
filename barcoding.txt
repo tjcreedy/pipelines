@@ -19,7 +19,7 @@ cd ../
 # Quality filter
 mkdir 3_filtered
 samples=$(for f in 2_merged/*.fastq; do s1=${f##*/}; echo ${s1%.fastq}; done | sort | uniq)
-for s in $samples; do vsearch --fastx_filter 2_merged/$s.fastq --fastq_maxee 1 --fastaout 3_filtered/$s.fasta 2&>1 | tee -a qualfilter_report.txt ; done
+for s in $samples; do vsearch --fastx_filter 2_merged/$s.fastq --fastq_maxee 1 --fastaout 3_filtered/$s.fasta 2>&1 | tee -a qualfilter_report.txt ; done
 
 
 # Then run NAPselect on the files in 3_filtered
