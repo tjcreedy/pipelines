@@ -48,7 +48,7 @@ echo $samples
 
 for s in $samples; do sed -e "s/\(^@D00.*\) .*$/\1;sample=$s;/" 2_merged/$s.fastq ; done > 3_mbc_concat.fastq
 
-  # If you're dealing with files from multiple runs, you should make sure you know all the possible read headers by running head on multiple files, then do this INSTEAD:
+  # If you're dealing with files from multiple runs, you should make sure you know all the possible read headers by running head on multiple files, then use the following command as an example, replacing the paranthetical section with the list that fits your data.
 # for s in $samples; do sed -E "s/^(@HISEQ[^ ]*|@M01013[^ ]*|@M02300[^ ]*).*$/\1;sample=$s;/" 2_merged/$s.fastq; done > 3_mbc_concat.fastq
 
 ##                                  ##
