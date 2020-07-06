@@ -46,9 +46,10 @@ echo $samples
   # Important note: change @D00 in the sed command for the start of the headers of your sequences (run head file.fastq). 
   # Try and use >=~4 characters to avoid quality lines starting with @ (rare, but it happens).
 
-for s in $samples; do sed -e "s/\(^@D00.*\) .*$/\1;sample=$s;/" 2_merged/$s.fastq >> 3_mbc_concat.fastq; done
+for s in $samples; do sed -e "s/\(^@D00.*\) .*$/\1;sample=$s;/" 2_merged/$s.fastq ; done > 3_mbc_concat.fastq
 
-  # Note that if this fails, make sure to delete 3_mbc_concat.fastq before rerunning, as this command only ever appends to this file (>>)
+  # If you're dealing with files from multiple runs, you should make sure you know all the possible read headers by running head on multiple files, then do this INSTEAD:
+# for s in $samples; do sed -E "s/^(@HISEQ[^ ]*|@M01013[^ ]*|@M02300[^ ]*).*$/\1;sample=$s;/" 2_merged/$s.fastq; done > 3_mbc_concat.fastq
 
 ##                                  ##
 ## MAPPING READS TO A REFERENCE SET ##
