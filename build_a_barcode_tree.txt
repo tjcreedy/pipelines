@@ -1,0 +1,52 @@
+# First, download some sequences from Genbank and place them in your working directory.
+# I'm assuming this file is called sequences.gb. If you have multiple genbank files, you can just concatenate them together (cat file1.gb file2.gb > sequences.gb)
+
+# Extract the gene sequences from these sequences
+  # Create a directory to put the gene sequences in
+mkdir extracted_genes 
+extract_genes.pl -g sequences.gb -o extracted_genes/ -mincds 1 -d
+
+# Copy the file for the gene you're interested in up to your working directory
+  # You might need to change the name of the file!
+mv extracted_genes/COX1.fa ./mygene.fa
+  # Might as well delete any other extracted genes
+rm -r extracted_genes
+
+# Your sequences will be different lengths, we probably want to trim them down to a common region
+  # Do an independent alignment
+mafft --globalpair --maxiterate 1000 mygene.fa > mygene_all_globalign.fa
+  # OR we have profiles for all mitochondrial genes that you can use to align to
+mafft --addfragments mygene.fa --6merpair /av/MMGdatabase/0_NT_profiles/COX1.fa > mygene_all_profaln.fa
+
+  # Download this alignment and open it in an alignment viewer such as aliview or geneious
+  # If you used the profile, delete the profile sequences, these will be at the top of the alignment
+  # Trim columns that fall before or after your sequence of interest
+  # Check the translation of your sequences and make sure you know the reading frame
+  # Save this (I'm assuming it's called mygene_trimmed_align.fa)
+  # Delete all the gaps in the alignment (in aliview, edit > delete all gaps in all sequences)
+  # Save this (I'm assuming it's called mygene_trimmed_unalign.fa) and upload it to the server
+
+# Run the final alignment using translation
+  # Translate your sequence, making sure you use the correct reading frame where it says RF 
+  # The 5 is the arthropod mitochondrial translation table
+translate.py -r RF 5 < mygene_trimmed_unalign.fa > mygene_trimmed_unalign_aa.fa
+
+  # Run alignment, either independent
+mafft --globalpair --maxiterate 1000 --anysymbol mygene_trimmed_unalign_aa.fa > mygene_trimmed_aa_globaln.fa
+  # OR against a profile
+mafft --addfragments mygene_trimmed_unalign_aa.fa --6merpair --anysymbol /av/MMGdatabase/0_AA_profiles/COX1.fa > mygene_trimmed_aa_profaln.fa
+
+  # Back translate into nucleotides (remember the reading frame, and change the input name depending on your alignment type)
+backtranslate.py -r RF mygene_trimmed_unalign.fa 5 < mygene_trimmed_aa_globaln.fa > mygene_trimmed_nt_globaln.fa
+
+  # If you used a profile alignment, make sure to remove the profile sequences from your alignment using an alignment viewer, or just a text editor.
+  
+# You can now run a tree on this alignment. To do so in FastTree, run:
+FastTree -gtr -nt < mygene_trimmed_nt_globaln.fa > mygene.nwk
+
+  # Better to do it in RAxML on CIPRES
+  
+ # Rename the tree
+rename_newick_with_gb.pl -g sequences.gb -t mygene.nwk -o mygene_RN.nwk -fields LOCUS TAXONOMY -ntax 6
+
+
