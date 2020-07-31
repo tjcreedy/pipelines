@@ -105,6 +105,13 @@ vsearch --uchime3_denovo 7_mbc_transpass.fasta --nonchimeras 8_mbc_final.fasta
 
   # 8_mbc_final.fasta contains your ASVs
 
+##                       ##
+## MAPPING READS TO ASVS ##
+##                       ##
+
+# Whether you are working on ASVs or OTUs determines whether you want to do this step
+vsearch --search_exact 3_mbc_concat.fasta -db 8_mbc_final.fasta -otutabout reads_asv_map.tsv
+
 ##                  ##
 ## OTU DELIMITATION ##
 ##                  ##
@@ -124,10 +131,10 @@ swarm -w otus.fasta -d 1 -z 8_mbc_final.fasta
 ##                       ##
 
   # Standard approach generating standard table
-vsearch --usearch_global 3_mbc_concat.fasta -db otus.fasta -id 0.97 -otutabout reads_map.tsv
+vsearch --usearch_global 3_mbc_concat.fasta -db otus.fasta -id 0.97 -otutabout reads_otu_map.tsv
 
   # Alternative approach generating detailed searching output
-vsearch --usearch_global 3_mbc_concat.fasta -db otus.fasta -id 0.97 -uc reads_search.uc
+vsearch --usearch_global 3_mbc_concat.fasta -db otus.fasta -id 0.97 -uc reads_otu_search.uc
 
 ##                                 ##
 ## TAXONOMY CLASSIFICATION OF OTUS ##
