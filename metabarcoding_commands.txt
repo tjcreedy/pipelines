@@ -151,7 +151,7 @@ vsearch --usearch_global 3_mbc_concat.fasta -db otus.fasta -id 0.97 -uc reads_ot
 blastn -db <path to nt> -query otus.fasta -outfmt 5 -out otus_nt_blast.xml -num_threads 15 -evalue 0.001
   # Go and load this xml into MEGAN and output the results as readName_to_taxonId 
   # Then run this to get the identifications in a nice format
-get_NCBI_taxonomy.py -i otus_nt_blast_MEGAN.tsv -l /av/references/NCBI_taxonomy.json -o <outname.txt>
+get_NCBI_taxonomy.py -i otus_nt_blast_MEGAN.txt -l /av/references/NCBI_taxonomy.json -o <outname.txt>
 
   # Using BLASTn vs your own reference set
 blastn -query otus.fasta -subject references.fasta -outfmt 6 -out otus_reference_blast.txt -num_threads 1 -evalue 0.001 -perc_identity 97
