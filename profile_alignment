@@ -1,0 +1,101 @@
+# Use this pipeline to align a set of mitogenomes (and barcodes, if using) using one of our standard profiles
+# Your mitogenomes should be in a single genbank file
+# If you have barcodes, these should be in a singe fasta file for each locus
+# If you need to make multiple trees, e.g. for different groups, you'd run this pipeline separately on each genbank/fasta file
+
+#        #
+# SET UP #
+#        #
+
+# Create a new directory and place your mitogenomes and/or fasta file into it
+
+# Make sure you have the scripts you need
+# extract_genes.pl  translate.py   backtranslate.py   are all in /av/vls/biotools/
+# catfasta2phyml.pl is available here https://github.com/nylander/catfasta2phyml, download by running this:
+wget https://raw.githubusercontent.com/nylander/catfasta2phyml/master/catfasta2phyml.pl
+
+#                      #
+# ALIGNING MITOGENOMES #
+#                      #
+
+## GENE EXTRACTION ##
+
+mkdir 1_nt_raw
+extract_genes.pl -g yourmitogenomefile.gb -out 1_nt_raw/ -k -regiontypes CDS
+
+## TRANSLATION ##
+
+mkdir 2_aa_raw
+
+# to translate file by file, run
+translate.py 5 < 1_nt_raw/agenefile.fa > 2_aa_raw/agenefile.fa
+
+# ALTERNATIVELY to do all of them with one command, run
+for file in 1_nt_raw/*; do translate.py 5 < $file > 2_aa_raw/=${file#*/}; done
+
+## ALIGNMENT ##
+
+mkdir 3_aa_aln
+
+# file by file
+mafft --addfragments 2_aa_raw/agenefile.fa --6merpair --anysymbol --thread 20 /av/MMGdatabase/0_AA_profiles/agenefile.fa > 3_aa_aln/agenefile.fa
+
+# ALTERNATIVELY all at once
+for file in 2_aa_raw/*; do mafft --addfragments $file --6merpair --anysymbol --thread 20 /av/MMGdatabase/0_AA_profiles/${file#*/} > 3_aa_aln/${file#*/}; done
+
+## REMOVE PROFILE ##
+
+cd 3_aa_aln
+
+# file by file
+mv agenefile.fa > agenefile.fa_bak
+perl -pe '$. > 1 and /^>/ ? print "\n" : chomp' agenefile.fa_bak | grep -A 1 -P '^>(?<!NC_).*' > agenefile.fa
+rm agenefile.fa_bak
+
+# ALTERNATIVELY all at once
+for file in *; do mv $file ${file}_bak; perl '$. > 1 and /^>/ ? print "\n" : chomp' ${file}_bak | grep -A 1 -P '^>(?<!NC_).*' > $file; rm ${file}_bak; done
+
+cd ../
+
+## BACKTRANSLATE ##
+
+mkdir 4_nt_aln
+
+# file by file
+backtranslate.py -i 3_aa_aln/agenefile.fa 1_nt_raw/agenefile.fa 5 > 4_nt_aln/agenefile.fa
+
+# ALTERNATIVELY all at once
+for file in 3_aa_aln/*; do backtranslate.py -i $file 1_nt_raw/${file#*/} 5 > 4_nt_aln/${file#*/}; done
+
+#                 #
+# ADDING BARCODES #
+#                 #
+
+cp -r 4_nt_aln 5_nt_aln_final
+
+# For each barcode locus file that you have
+
+mafft --addfragments yourbarcodefile.fa --6merpair --thread 20 4_nt_aln/thecorrespondinggenefile.fa > 5_nt_aln_final/thecorrespondinggenefile.fa
+
+# IMPORTANT NOTE: if you intend to partition by codon, you will need to manually check the output file here to ensure that frame is still maintained
+
+#                     #
+# BULDING SUPERMATRIX #
+#                     #
+
+# Replace 4_nt_aln with 5_nt_aln_final if you added barcodes
+
+catfasta2phyml.pl -c -fasta 4_nt_aln/* > supermatrix.fasta 2> partitions.txt
+
+# Experimental code to create a codon partition table (replace 4_nt_aln with 5_nt_aln_final if you added barcodes)
+sed -i -e "s/^/DNA, /g" -e "s/4_nt_aln\//g" partitions.txt
+while read l \
+do \
+	n1=$(echo $l| grep -oP "(?<= )\d*") \
+	n2=$(($n1 + 1)) \
+	n3=$(($n2 + 1)) \
+	l1=${l/ = /_1 = }\3 \
+	l2=${l/ = $n1-/_2 = $n2-}\3 \
+	l3=${l/ = $n1-/_3 = $n3-}\3 \
+	echo -e "$l1\n$l2\n$l3" \
+done < partitions.txt > partitions_codon.txt
