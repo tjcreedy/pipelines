@@ -27,33 +27,37 @@ extract_genes.pl -g yourmitogenomefile.gb -out 1_nt_raw/ -k -regiontypes CDS
 
 mkdir 2_aa_raw
 
-# to translate file by file, run
-translate.py 5 < 1_nt_raw/agenefile.fa > 2_aa_raw/agenefile.fa
-
-# ALTERNATIVELY to do all of them with one command, run
+# Translate all the individual gene files in 1_nt_raw in a loop with one command, putting the outputs into 2_aa_raw:
 for file in 1_nt_raw/*; do translate.py 5 < $file > 2_aa_raw/=${file#*/}; done
+
+# NOTE: to run this on a single file, e.g. ATP6, you'd do
+# translate.py 5 < 1_nt_raw/ATP6.fa > 2_aa_raw/ATP6.fa
+# Swapping ATP6 for the name of each of the genes you have
 
 ## ALIGNMENT ##
 
 mkdir 3_aa_aln
 
-# file by file
-mafft --addfragments 2_aa_raw/agenefile.fa --6merpair --anysymbol --thread 20 /av/MMGdatabase/0_AA_profiles/agenefile.fa > 3_aa_aln/agenefile.fa
-
-# ALTERNATIVELY all at once
+# Align all the individual gene files in 2_aa_raw in a loop with one command, putting the outputs into 3_aa_aln:
 for file in 2_aa_raw/*; do mafft --addfragments $file --6merpair --anysymbol --thread 20 /av/MMGdatabase/0_AA_profiles/${file#*/} > 3_aa_aln/${file#*/}; done
+
+# NOTE: to run this on a single file, e.g. ATP6, you'd do
+# mafft --addfragments 2_aa_raw/ATP6.fa --6merpair --anysymbol --thread 20 /av/MMGdatabase/0_AA_profiles/ATP6.fa > 3_aa_aln/ATP6.fa
+# Swapping ATP6 for the name of each of the genes you have
+
 
 ## REMOVE PROFILE ##
 
 cd 3_aa_aln
 
-# file by file
-mv agenefile.fa > agenefile.fa_bak
-perl -pe '$. > 1 and /^>/ ? print "\n" : chomp' agenefile.fa_bak | grep -A 1 -P '^>(?<!NC_).*' > agenefile.fa
-rm agenefile.fa_bak
-
-# ALTERNATIVELY all at once
+# Remove the profile from all of the individual gene files in 3_aa_aln in a loop with one command
 for file in *; do mv $file ${file}_bak; perl '$. > 1 and /^>/ ? print "\n" : chomp' ${file}_bak | grep -A 1 -P '^>(?<!NC_).*' > $file; rm ${file}_bak; done
+
+# NOTE: to run this on a single file, e.g. ATP6, you'd do
+# mv ATP6.fa > ATP6.fa_bak
+# perl -pe '$. > 1 and /^>/ ? print "\n" : chomp' ATP6.fa_bak | grep -A 1 -P '^>(?<!NC_).*' > ATP6.fa
+# rm ATP6.fa_bak
+# Swapping ATP6 for the name of each of the genes you have
 
 cd ../
 
@@ -61,11 +65,13 @@ cd ../
 
 mkdir 4_nt_aln
 
-# file by file
-backtranslate.py -i 3_aa_aln/agenefile.fa 1_nt_raw/agenefile.fa 5 > 4_nt_aln/agenefile.fa
-
-# ALTERNATIVELY all at once
+# Backtranslate all the individual gene files in 3_aa_aln in a loop with one command, putting the outputs into 3_nt_aln:
 for file in 3_aa_aln/*; do backtranslate.py -i $file 1_nt_raw/${file#*/} 5 > 4_nt_aln/${file#*/}; done
+
+# NOTE: to run this on a single file, e.g. ATP6, you'd do
+# backtranslate.py -i 3_aa_aln/ATP6.fa 1_nt_raw/ATP6.fa 5 > 4_nt_aln/ATP6.fa
+# Swapping ATP6 for the name of each of the genes you have
+
 
 #                 #
 # ADDING BARCODES #
@@ -76,6 +82,10 @@ cp -r 4_nt_aln 5_nt_aln_final
 # For each barcode locus file that you have
 
 mafft --addfragments yourbarcodefile.fa --6merpair --thread 20 4_nt_aln/thecorrespondinggenefile.fa > 5_nt_aln_final/thecorrespondinggenefile.fa
+
+# FOR EXAMPLE if you have a set of COX1 barcodes
+# mafft --addfragments yourbarcodefile.fa --6merpair --thread 20 4_nt_aln/COX1.fa > 5_nt_aln_final/COX1.fa
+#
 
 # IMPORTANT NOTE: if you intend to partition by codon, you will need to manually check the output file here to ensure that frame is still maintained
 
