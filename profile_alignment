@@ -51,11 +51,11 @@ for file in 2_aa_raw/*; do mafft --addfragments $file --6merpair --anysymbol --t
 cd 3_aa_aln
 
 # Remove the profile from all of the individual gene files in 3_aa_aln in a loop with one command
-for file in *; do mv $file ${file}_bak; perl -pe '$. > 1 and /^>/ ? print "\n" : chomp' ${file}_bak | grep -A 1 -P '^>(?<!NC_).*' > $file; rm ${file}_bak; done
+for file in *; do mv $file ${file}_bak; perl -pe '$. > 1 and /^>/ ? print "\n" : chomp' ${file}_bak | grep -A 1 -P '^>(?!NC_).*' > $file; rm ${file}_bak; done
 
 # NOTE: to run this on a single file, e.g. ATP6, you'd do
 # mv ATP6.fa > ATP6.fa_bak
-# perl -pe '$. > 1 and /^>/ ? print "\n" : chomp' ATP6.fa_bak | grep -A 1 -P '^>(?<!NC_).*' > ATP6.fa
+# perl -pe '$. > 1 and /^>/ ? print "\n" : chomp' ATP6.fa_bak | grep -A 1 -P '^>(?!NC_).*' > ATP6.fa
 # rm ATP6.fa_bak
 # Swapping ATP6 for the name of each of the genes you have
 
