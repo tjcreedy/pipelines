@@ -28,7 +28,7 @@ extract_genes.pl -g yourmitogenomefile.gb -out 1_nt_raw/ -k -regiontypes CDS
 mkdir 2_aa_raw
 
 # Translate all the individual gene files in 1_nt_raw in a loop with one command, putting the outputs into 2_aa_raw:
-for file in 1_nt_raw/*; do translate.py 5 < $file > 2_aa_raw/=${file#*/}; done
+for file in 1_nt_raw/*; do translate.py 5 < $file > 2_aa_raw/${file#*/}; done
 
 # NOTE: to run this on a single file, e.g. ATP6, you'd do
 # translate.py 5 < 1_nt_raw/ATP6.fa > 2_aa_raw/ATP6.fa
@@ -51,7 +51,7 @@ for file in 2_aa_raw/*; do mafft --addfragments $file --6merpair --anysymbol --t
 cd 3_aa_aln
 
 # Remove the profile from all of the individual gene files in 3_aa_aln in a loop with one command
-for file in *; do mv $file ${file}_bak; perl '$. > 1 and /^>/ ? print "\n" : chomp' ${file}_bak | grep -A 1 -P '^>(?<!NC_).*' > $file; rm ${file}_bak; done
+for file in *; do mv $file ${file}_bak; perl -pe '$. > 1 and /^>/ ? print "\n" : chomp' ${file}_bak | grep -A 1 -P '^>(?<!NC_).*' > $file; rm ${file}_bak; done
 
 # NOTE: to run this on a single file, e.g. ATP6, you'd do
 # mv ATP6.fa > ATP6.fa_bak
