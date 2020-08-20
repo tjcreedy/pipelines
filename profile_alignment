@@ -1,4 +1,4 @@
-# Use this pipeline to align a set of mitogenomes (and barcodes, if using) using one of our standard profiles
+# Use this pipeline to align a set of mitogenomes (and barcodes, if using) using one of our standard profiles, or to add a set of mitogenomes to a set of existing alignments.
 # Your mitogenomes should be in a single genbank file
 # If you have barcodes, these should be in a singe fasta file for each locus
 # If you need to make multiple trees, e.g. for different groups, you'd run this pipeline separately on each genbank/fasta file
@@ -38,8 +38,13 @@ for file in 1_nt_raw/*; do translate.py 5 < $file > 2_aa_raw/${file#*/}; done
 
 mkdir 3_aa_aln
 
-# Align all the individual gene files in 2_aa_raw in a loop with one command, putting the outputs into 3_aa_aln:
+## Align all the individual gene files in 2_aa_raw in a loop with one command, putting the outputs into 3_aa_aln:
+# For a profile alignment (where you want only your sequences, you're just using the profile to help align)
 for file in 2_aa_raw/*; do mafft --addfragments $file --6merpair --anysymbol --thread 20 /av/MMGdatabase/0_AA_profiles/${file#*/} > 3_aa_aln/${file#*/}; done
+
+# OR For an alignment where you're adding your sequences to an existing dataset
+for file in 2_aa_raw/*; do mafft --addfragments $file --6merpair --anysymbol --thread 20 /path/to/existing/aa/alignments/${file#*/} > 3_aa_aln/${file#*/}; done
+
 
 # NOTE: to run this on a single file, e.g. ATP6, you'd do
 # mafft --addfragments 2_aa_raw/ATP6.fa --6merpair --anysymbol --thread 20 /av/MMGdatabase/0_AA_profiles/ATP6.fa > 3_aa_aln/ATP6.fa
@@ -47,6 +52,7 @@ for file in 2_aa_raw/*; do mafft --addfragments $file --6merpair --anysymbol --t
 
 
 ## REMOVE PROFILE ##
+# Obviously skip this step if you want to keep the existing data in the alignment.
 
 cd 3_aa_aln
 
@@ -65,13 +71,16 @@ cd ../
 
 mkdir 4_nt_aln
 
-# Backtranslate all the individual gene files in 3_aa_aln in a loop with one command, putting the outputs into 3_nt_aln:
+## Backtranslate all the individual gene files in 3_aa_aln in a loop with one command, putting the outputs into 3_nt_aln:
+# If you aligned against a profile and have removed it
 for file in 3_aa_aln/*; do backtranslate.py -i $file 1_nt_raw/${file#*/} 5 > 4_nt_aln/${file#*/}; done
+
+# OR If you aligned against existing sequences and want to keep them
+for file in 3_aa_aln/*; do cat /path/to/existing/nt/raw/${file#*/} 1_nt_raw/${file#*/} | backtranslate.py -i $file /dev/stdin 5 > 4_nt_aln/${file#*/}; done
 
 # NOTE: to run this on a single file, e.g. ATP6, you'd do
 # backtranslate.py -i 3_aa_aln/ATP6.fa 1_nt_raw/ATP6.fa 5 > 4_nt_aln/ATP6.fa
 # Swapping ATP6 for the name of each of the genes you have
-
 
 #                 #
 # ADDING BARCODES #
