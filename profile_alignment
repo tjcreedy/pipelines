@@ -106,6 +106,9 @@ mafft --addfragments yourbarcodefile.fa --6merpair --thread 20 4_nt_aln/thecorre
 
 catfasta2phyml.pl -c -fasta 4_nt_aln/* > supermatrix.fasta 2> partitions.txt
 
+# Check for no errors
+cat partitions.txt
+
 # Experimental code to create a codon partition table (replace 4_nt_aln with 5_nt_aln_final if you added barcodes)
 sed -i -e "s/^/DNA, /g" -e "s/4_nt_aln\//g" partitions.txt
 while read l \
