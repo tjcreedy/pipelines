@@ -86,7 +86,7 @@ for file in 3_aa_aln/*; do cat /path/to/existing/nt/raw/${file#*/} 1_nt_raw/${fi
 # ADDING BARCODES #
 #                 #
 
-cp -T 4_nt_aln 5_nt_aln_final   # NB: -T treats directories as files, overwriting any contents that already exist
+cp -Tr 4_nt_aln 5_nt_aln_final   # NB: -T treats directories as files, overwriting any contents that already exist
 
 # For each barcode locus file that you have
 
