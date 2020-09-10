@@ -27,7 +27,7 @@ mafft --addfragments mygene.fa --6merpair /av/MMGdatabase/0_NT_profiles/COX1.fa 
   # Save this (I'm assuming it's called mygene_trimmed_unalign.fa) and upload it to the server
 
 # Run the final alignment using translation
-  # Translate your sequence, making sure you use the correct reading frame where it says RF 
+  # Translate your sequence, making sure you use the correct reading frame where it says RF (i.e. replace RF with 1, 2 or 3)
   # The 5 is the arthropod mitochondrial translation table
 translate.py -r RF 5 < mygene_trimmed_unalign.fa > mygene_trimmed_unalign_aa.fa
 
