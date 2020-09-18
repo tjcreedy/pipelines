@@ -99,10 +99,25 @@ mafft --addfragments yourbarcodefile.fa --6merpair --thread 20 4_nt_aln/thecorre
 # IMPORTANT NOTE: if you intend to partition by codon, you will need to manually check the output file here to ensure that frame is still maintained
 
 #                     #
+# REDUCING ALIGNMENTS #
+#                     #
+
+# If you a performing tree-building with a backbone that comprises all of your mitogenomes, and you're only interested in the placement of the barcodes,
+# you can strip out unneeded columns from the alignments to save tree building time.
+
+mkdir 6_nt_aln_reduced
+
+# Create a list of the sequences that must not be reduced (i.e. your barcodes)
+grep -oP "(?<=^>).*$" yourbarcodefile.fa > preserve.txt
+
+# Run the script
+reducealign.py -a 5_nt_aln_final/* -p preserved.txt -r -o 6_nt_aln_reduced/
+
+#                     #
 # BULDING SUPERMATRIX #
 #                     #
 
-# Replace 4_nt_aln with 5_nt_aln_final if you added barcodes
+# Replace 4_nt_aln with 5_nt_aln_final if you added barcodes or 6_nt_aln_final if you added barcodes and reduced the alignments.
 
 catfasta2phyml.pl -c -fasta 4_nt_aln/* > supermatrix.fasta 2> partitions.txt
 
