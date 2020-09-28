@@ -90,14 +90,8 @@ vsearch --fastx_filter 5_mbc_denoise.fasta --fastq_minlen 418 --fastq_maxlen 418
 ### Translation filtering ##
   
   # Run the filtering (5 is the translation table)
-  # If it can't find filtertranslate, run `python3 -m pip install NUMTdumper`
-filtertranslate -i 6_mbc_indelfil.fasta -t 5
-
-  # Remove the ones that failed
-rm *transfail.fa
-
-  # Rename the file for those that passed
-mv 6_mbc_indelfil_transpass.fa 7_mbc_transpass.fasta
+  # If it can't find filtertranslate, run `python3 -m pip install metaMATE`
+filtertranslate -i 6_mbc_indelfil.fasta -t 5 -o 7_mbc_transpass.fasta
 
 ### Chimera filtering ###
 
