@@ -151,7 +151,7 @@ get_NCBI_taxonomy.py -i otus_nt_blast_MEGAN.txt -l /av/references/NCBI_taxonomy.
 blastn -query otus.fasta -subject references.fasta -outfmt 6 -out otus_reference_blast.txt -num_threads 1 -evalue 0.001 -perc_identity 97
 
   # Using SINTAX vs the MIDORI dataset.
-midorilocation="/av/references/MIDORI_UNIQUE_20180221_COI_SINTAX.udb"
+midorilocation="/av/references/MIDORI_UNIQ_GB239_CO1_SINTAX.udb"
 usearch110 -sintax otus.fasta -db $midorilocation -tabbedout otus_midori_sintax.tsv -strand both -sintax_cutoff 1
 
   # Filtering sequences based on a SINTAX output
