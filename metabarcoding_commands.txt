@@ -114,6 +114,13 @@ vsearch --search_exact 3_mbc_concat.fasta -db 8_mbc_final.fasta -otutabout reads
 
 vsearch --cluster_size 8_mbc_final.fasta --sizein --relabel otu --id 0.97 --centroids otus.fasta
 
+# If you want to record which ASVs form which OTUs:
+vsearch --cluster_size 8_mbc_final.fasta --sizein --relabel otu --id 0.97 --centroids otus.fasta -uc asv_otu.uc
+
+# The following line should convert the uc into an easy-to-read table but no guarantees that it's correct!
+paste <(grep -v "^C" asv_otu.uc | cut -f9) <(grep -v "^C" asv_otu.uc | cut -f2 | while read l; do echo "otu$(($l + 1))"; done) > asv_otu.tsv
+
+
 ### SWARM alternative ###
 
 swarm -w otus.fasta -d 1 -z 8_mbc_final.fasta
