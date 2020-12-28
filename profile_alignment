@@ -61,7 +61,7 @@ for file in *; do mv $file ${file}_bak; perl -pe '$. > 1 and /^>/ ? print "\n" :
 
 # NOTE: to run this on a single file, e.g. ATP6, you'd do
 # mv ATP6.fa > ATP6.fa_bak
-# perl -pe '$. > 1 and /^>/ ? print "\n" : chomp' ATP6.fa_bak | grep -A 1 -P '^>(?!NC_).*' > ATP6.fa
+# perl -pe '$. > 1 and /^>/ ? print "\n" : chomp' ATP6.fa_bak | grep -A 1 -P '^>(?!PROFILE::).*' > ATP6.fa
 # rm ATP6.fa_bak
 # Swapping ATP6 for the name of each of the genes you have
 
@@ -108,7 +108,7 @@ mafft --addfragments yourbarcodefile.fa --6merpair --thread 20 4_nt_aln/thecorre
 mkdir 6_nt_aln_reduced
 
 # Create a list of the sequences that must not be reduced (i.e. your barcodes)
-grep -oP "(?<=^>).*$" yourbarcodefile.fa > preserve.txt
+grep -oP "(?<=^>).*$" yourbarcodefile.fa > preserved.txt
 
 # Run the script
 reducealign.py -a 5_nt_aln_final/* -p preserved.txt -r -o 6_nt_aln_reduced/
