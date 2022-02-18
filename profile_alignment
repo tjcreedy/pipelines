@@ -153,7 +153,9 @@ mafft --addfragments yourbarcodefile.fa --6merpair --thread 20 4_nt_aln/thecorre
 #                     #
 
 # If you are performing tree-building with a backbone/constraint that comprises all of your mitogenomes, and you're only interested in the 
-# placement of the barcodes, you can strip out unneeded columns from the alignments to save tree building time.
+# placement of the barcodes, you may strip out unneeded columns from the alignments to save tree building time.
+# Note that this might not technically be appropriate because adding more sequences may change the character variation in the existing taxa.
+# But it's probably fine if you just want to run quickly and don't intend to compare constrained vs unconstrained.
 
 mkdir 6_nt_aln_reduced
 
@@ -209,7 +211,3 @@ iqtree -B 1000 -alrt 1000 -abayes -lbp 1000 -bnni -s 5_supermatrix.fasta -st COD
 cat 7_aa_gene.treefile 7_aa_gene_constrained.treefile > 7_aa_gene_uc+c_treefiles
 iqtree -s supermatrix.fasta -st CODON5 -Q aa_gene.best_scheme.nex -z 7_aa_gene_uc+c_treefiles -n 0 -zb 10000 -zw -au --prefix 7_aa_gene_treetests
 # (of course you'll want to remove -st CODON5 if running on nucleotide data)
-
-
-
-
