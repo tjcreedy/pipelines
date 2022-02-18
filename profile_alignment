@@ -76,7 +76,7 @@ mkdir 3_aa_aln
 # For a profile alignment (where you want only your sequences, you're just using the profile to help align)
 for file in 2_aa_raw/*
 do
-   mafft --addfragments $file --6merpair --anysymbol --thread 20 /av/MMGdatabase/0_AA_profiles/${file#*/} > 3_aa_aln/${file#*/}
+   mafft --addfragments $file --6merpair --anysymbol --thread 20 /path/to/aa/profiles/0_AA_profiles/${file#*/} > 3_aa_aln/${file#*/}
 done
 
 # OR For an alignment where you're adding your sequences to an existing dataset
@@ -87,7 +87,7 @@ done
 
 
 # NOTE: to run this on a single file, e.g. ATP6, you'd do
-# mafft --addfragments 2_aa_raw/ATP6.fa --6merpair --anysymbol --thread 20 /av/MMGdatabase/0_AA_profiles/ATP6.fa > 3_aa_aln/ATP6.fa
+# mafft --addfragments 2_aa_raw/ATP6.fa --6merpair --anysymbol --thread 20 /path/to/aa/profiles/ATP6.fa > 3_aa_aln/ATP6.fa
 # Swapping ATP6 for the name of each of the genes you have
 
 
