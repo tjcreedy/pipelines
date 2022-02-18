@@ -39,6 +39,8 @@ wget https://raw.githubusercontent.com/nylander/catfasta2phyml/master/catfasta2p
 chmod u+x script
 # e.g.
 chmod u+x extract_genes.pl
+# then you can run the script like this:
+./extract_genes.pl
 
 # Alternatively, you can specify the interpreter before the script name, e.g.
 perl extract_genes.pl
