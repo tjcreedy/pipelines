@@ -1,5 +1,5 @@
-# Use this pipeline to align a set of mitogenomes (and barcodes, if using) using one of our standard profiles, or to add a set of mitogenomes to a set of existing alignments.
-# Your mitogenomes should be in a single genbank file
+# Use this pipeline to align a set of mitogenomes (and barcodes, if using) using one of our standard profiles, or to add a set 
+# of mitogenomes to a set of existing alignments.
 # If you have barcodes, these should be in a singe fasta file for each locus
 # If you need to make multiple trees, e.g. for different groups, you'd run this pipeline separately on each genbank/fasta file
 
@@ -9,10 +9,39 @@
 
 # Create a new directory and place your mitogenomes and/or fasta file into it
 
-# Make sure you have the scripts you need
-# extract_genes.pl  translate.py   backtranslate.py   are all in /av/vls/biotools/
-# catfasta2phyml.pl is available here https://github.com/nylander/catfasta2phyml, download by running this:
+# You need to ensure you have various scripts, all of which are available in github repositiories. 
+# You can acquire these scripts one of two ways. You can either clone the entire git repository to somewhere useful, in which case
+# you will need to modify the command paths to point to these scripts. Or you can download each script to your current directory.
+
+# To clone a repository, run the following line, replacing the author and repo parts with the relevant values
+git clone https://github.com/author/repo.git 
+# e.g.
+git clone https://github.com/tjcreedy/biotools.git
+
+# To download a single file, run the following line, replacing the author, repo, branch and name parts with the relevant values
+wget https://raw.githubusercontent.com/author/repo/branch/name
+# e.g.
 wget https://raw.githubusercontent.com/nylander/catfasta2phyml/master/catfasta2phyml.pl
+
+# tjcreedy/biotools:
+# extract_genes.pl
+# translate.py
+# backtranslate.py
+
+# nylander/catfasta2phyml
+# catfasta2phyml.pl 
+
+# tjcreedy/phylostuff
+# partitioner.py
+
+# If you get errors running any of these scripts, you may need to make them executable. You can do this by running
+chmod u+x script
+# e.g.
+chmod u+x extract_genes.pl
+
+# Alternatively, you can specify the interpreter before the script name, e.g.
+perl extract_genes.pl
+python translate.py
 
 #                      #
 # ALIGNING MITOGENOMES #
@@ -28,7 +57,11 @@ extract_genes.pl -g yourmitogenomefile.gb -out 1_nt_raw/ -k -regiontypes CDS
 mkdir 2_aa_raw
 
 # Translate all the individual gene files in 1_nt_raw in a loop with one command, putting the outputs into 2_aa_raw:
-for file in 1_nt_raw/*; do translate.py 5 < $file > 2_aa_raw/${file#*/}; done
+# (Note that you can copy and paste all four lines directly into the terminal in one go)
+for file in 1_nt_raw/*
+do
+   translate.py 5 < $file > 2_aa_raw/${file#*/}
+done
 
 # NOTE: to run this on a single file, e.g. ATP6, you'd do
 # translate.py 5 < 1_nt_raw/ATP6.fa > 2_aa_raw/ATP6.fa
@@ -40,10 +73,16 @@ mkdir 3_aa_aln
 
 ## Align all the individual gene files in 2_aa_raw in a loop with one command, putting the outputs into 3_aa_aln:
 # For a profile alignment (where you want only your sequences, you're just using the profile to help align)
-for file in 2_aa_raw/*; do mafft --addfragments $file --6merpair --anysymbol --thread 20 /av/MMGdatabase/0_AA_profiles/${file#*/} > 3_aa_aln/${file#*/}; done
+for file in 2_aa_raw/*
+do
+   mafft --addfragments $file --6merpair --anysymbol --thread 20 /av/MMGdatabase/0_AA_profiles/${file#*/} > 3_aa_aln/${file#*/}
+done
 
 # OR For an alignment where you're adding your sequences to an existing dataset
-for file in 2_aa_raw/*; do mafft --addfragments $file --6merpair --anysymbol --thread 20 /path/to/existing/aa/alignments/${file#*/} > 3_aa_aln/${file#*/}; done
+for file in 2_aa_raw/*
+do
+   mafft --addfragments $file --6merpair --anysymbol --thread 20 /path/to/existing/aa/alignments/${file#*/} > 3_aa_aln/${file#*/}
+done
 
 
 # NOTE: to run this on a single file, e.g. ATP6, you'd do
@@ -57,7 +96,12 @@ for file in 2_aa_raw/*; do mafft --addfragments $file --6merpair --anysymbol --t
 cd 3_aa_aln
 
 # Remove the profile from all of the individual gene files in 3_aa_aln in a loop with one command
-for file in *; do mv $file ${file}_bak; perl -pe '$. > 1 and /^>/ ? print "\n" : chomp' ${file}_bak | grep -A 1 -P '^>(?!PROFILE::).*' > $file; rm ${file}_bak; done
+for file in *
+do 
+   mv $file ${file}_bak
+   perl -pe '$. > 1 and /^>/ ? print "\n" : chomp' ${file}_bak | grep -A 1 -P '^>(?!PROFILE::).*' > $file
+   rm ${file}_bak
+done
 
 # NOTE: to run this on a single file, e.g. ATP6, you'd do
 # mv ATP6.fa > ATP6.fa_bak
@@ -73,10 +117,16 @@ mkdir 4_nt_aln
 
 ## Backtranslate all the individual gene files in 3_aa_aln in a loop with one command, putting the outputs into 3_nt_aln:
 # If you aligned against a profile and have removed it
-for file in 3_aa_aln/*; do backtranslate.py -i $file 1_nt_raw/${file#*/} 5 > 4_nt_aln/${file#*/}; done
+for file in 3_aa_aln/*
+do
+   backtranslate.py -i $file 1_nt_raw/${file#*/} 5 > 4_nt_aln/${file#*/}
+done
 
 # OR If you aligned against existing sequences and want to keep them
-for file in 3_aa_aln/*; do cat /path/to/existing/nt/raw/${file#*/} 1_nt_raw/${file#*/} | backtranslate.py -i $file /dev/stdin 5 > 4_nt_aln/${file#*/}; done
+for file in 3_aa_aln/*
+do
+   cat /path/to/existing/nt/raw/${file#*/} 1_nt_raw/${file#*/} | backtranslate.py -i $file /dev/stdin 5 > 4_nt_aln/${file#*/}
+done
 
 # NOTE: to run this on a single file, e.g. ATP6, you'd do
 # backtranslate.py -i 3_aa_aln/ATP6.fa 1_nt_raw/ATP6.fa 5 > 4_nt_aln/ATP6.fa
@@ -96,14 +146,14 @@ mafft --addfragments yourbarcodefile.fa --6merpair --thread 20 4_nt_aln/thecorre
 # mafft --addfragments yourbarcodefile.fa --6merpair --thread 20 4_nt_aln/COX1.fa > 5_nt_aln_final/COX1.fa
 #
 
-# IMPORTANT NOTE: if you intend to partition by codon, you will need to manually check the output file here to ensure that frame is still maintained
+# IMPORTANT NOTE: if you intend to partition by codon, you should manually check the output file here to ensure that frame is still maintained
 
 #                     #
 # REDUCING ALIGNMENTS #
 #                     #
 
-# If you a performing tree-building with a backbone that comprises all of your mitogenomes, and you're only interested in the placement of the barcodes,
-# you can strip out unneeded columns from the alignments to save tree building time.
+# If you are performing tree-building with a backbone/constraint that comprises all of your mitogenomes, and you're only interested in the 
+# placement of the barcodes, you can strip out unneeded columns from the alignments to save tree building time.
 
 mkdir 6_nt_aln_reduced
 
@@ -119,20 +169,47 @@ reducealign.py -a 5_nt_aln_final/* -p preserved.txt -r -o 6_nt_aln_reduced/
 
 # Replace 4_nt_aln with 5_nt_aln_final if you added barcodes or 6_nt_aln_final if you added barcodes and reduced the alignments.
 
-catfasta2phyml.pl -c -fasta 4_nt_aln/* > supermatrix.fasta 2> partitions.txt
+catfasta2phyml.pl -c -fasta 4_nt_aln/* > 5_supermatrix.fasta 2> 5_partitions.txt
 
 # Check for no errors
 cat partitions.txt
 
-# Experimental code to create a codon partition table (replace 4_nt_aln with 5_nt_aln_final if you added barcodes)
-sed -i -e "s/^/DNA, /g" -e "s/4_nt_aln\//g" partitions.txt
-while read l \
-do \
-	n1=$(echo $l| grep -oP "(?<= )\d*") \
-	n2=$(($n1 + 1)) \
-	n3=$(($n2 + 1)) \
-	l1=${l/ = /_1 = }\3 \
-	l2=${l/ = $n1-/_2 = $n2-}\3 \
-	l3=${l/ = $n1-/_3 = $n3-}\3 \
-	echo -e "$l1\n$l2\n$l3" \
-done < partitions.txt > partitions_codon.txt
+# Generate maximal partition tables
+# Partition by genes
+partitioner.py -a DNA < 5_partitions.txt > 5_gene_partitions.txt
+# Partition by genes and all three codon positions
+partitioner.py -a DNA -c < 5_partitions.txt > 5_gene+codon123_partitions.txt
+# Partition by genes and first two codon positions
+partitioner.py -a DNA -c -p 1 2 < 5_partitions.txt > 5_gene+codon12_partitions.txt
+
+#                             #
+# PHYLOGENETIC RECONSTRUCTION # 
+#                             #
+
+# Here are some basic commands for IQTREE to build three trees: one for each of your nucleotide partitons, and one based on the amino acid translation
+# YOU SHOULD NOT JUST RUN THESE COMMANDS. Read the IQTREE manual to understand what they're doing http://www.iqtree.org/doc/iqtree-doc.pdf
+
+
+# First, you need to run partition finder and model finder to find the optimal set of partitions and the appropriate models for each
+
+iqtree -s 5_supermatrix.fasta -m MF+MERGE -T AUTO --threads-max 10 --prefix 6_nt_gene+codon123 -Q 5_gene+codon123_partitions.txt
+iqtree -s 5_supermatrix.fasta -m MF+MERGE -T AUTO --threads-max 10 --prefix 6_nt_gene+codon12 -Q 5_gene+codon12_partitions.txt
+iqtree -s 5_supermatrix.fasta -st CODON5 -msub mitochondrial -m MF+MERGE -T AUTO --threads-max 10 --prefix 6_aa_gene -Q 5_gene_partitions.txt
+
+# Once these complete you can then use the output partition and model file in tree building runs
+
+iqtree -B 1000 -alrt 1000 -abayes -lbp 1000 -bnni -s 5_supermatrix.fasta -T AUTO --threads-max 10 --prefix 7_nt_gene+codon123 -Q 6_nt_gene+codon123.best_scheme.nex
+iqtree -B 1000 -alrt 1000 -abayes -lbp 1000 -bnni -s 5_supermatrix.fasta -T AUTO --threads-max 10 --prefix 7_nt_gene+codon12 -Q 6_nt_gene+codon12.best_scheme.nex
+iqtree -B 1000 -alrt 1000 -abayes -lbp 1000 -bnni -s 5_supermatrix.fasta -st CODON5 -T AUTO --threads-max 10 --prefix 7_aa_gene -Q 6_aa_gene.best_scheme.nex
+
+# If you have a constraint tree you can run the above commands but with -g constraint.tre added 
+# (you'll want to modify the value to --prefix so that it doesn't overwrite the unconstrained version!)
+
+# If you've done constrained and unconstrained versions of the same data, you might want to compare with AU tests, here's an example
+cat 7_aa_gene.treefile 7_aa_gene_constrained.treefile > 7_aa_gene_uc+c_treefiles
+iqtree -s supermatrix.fasta -st CODON5 -Q aa_gene.best_scheme.nex -z 7_aa_gene_uc+c_treefiles -n 0 -zb 10000 -zw -au --prefix 7_aa_gene_treetests
+# (of course you'll want to remove -st CODON5 if running on nucleotide data)
+
+
+
+
