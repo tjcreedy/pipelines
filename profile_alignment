@@ -179,7 +179,7 @@ catfasta2phyml.pl -c -fasta 4_nt_aln/* > 5_nt_supermatrix.fasta 2> 5_nt_partitio
 
 # Amino acid supermatrix (currently only the input data, not with barcodes!)
 
-catfasta2phyml.pl -c -fasta 3_nt_aln/* > 5_aa_supermatrix.fasta 2> 5_aa_partitions.txt
+catfasta2phyml.pl -c -fasta 3_aa_aln/* > 5_aa_supermatrix.fasta 2> 5_aa_partitions.txt
 
 
 # Check for no errors
