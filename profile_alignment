@@ -172,20 +172,29 @@ reducealign.py -a 5_nt_aln_final/* -p preserved.txt -r -o 6_nt_aln_reduced/
 # BULDING SUPERMATRIX #
 #                     #
 
+# Nucleotide supermatrix
 # Replace 4_nt_aln with 5_nt_aln_final if you added barcodes or 6_nt_aln_final if you added barcodes and reduced the alignments.
 
-catfasta2phyml.pl -c -fasta 4_nt_aln/* > 5_supermatrix.fasta 2> 5_partitions.txt
+catfasta2phyml.pl -c -fasta 4_nt_aln/* > 5_nt_supermatrix.fasta 2> 5_nt_partitions.txt
+
+# Amino acid supermatrix (currently only the input data, not with barcodes!)
+
+catfasta2phyml.pl -c -fasta 3_nt_aln/* > 5_aa_supermatrix.fasta 2> 5_aa_partitions.txt
+
 
 # Check for no errors
-cat partitions.txt
+cat *partitions.txt
 
-# Generate maximal partition tables
+# Generate maximal partition tables for NT data
 # Partition by genes
-partitioner.py -a DNA < 5_partitions.txt > 5_gene_partitions.txt
+partitioner.py -a DNA < 5_nt_partitions.txt > 5_nt_gene_partitions.txt
 # Partition by genes and all three codon positions
-partitioner.py -a DNA -c < 5_partitions.txt > 5_gene+codon123_partitions.txt
+partitioner.py -a DNA -c < 5_nt_partitions.txt > 5_nt_gene+codon123_partitions.txt
 # Partition by genes and first two codon positions
-partitioner.py -a DNA -c -p 1 2 < 5_partitions.txt > 5_gene+codon12_partitions.txt
+partitioner.py -a DNA -c -p 1 2 < 5_nt_partitions.txt > 5_nt_gene+codon12_partitions.txt
+
+# Generate maximal partition tables for AA data
+partitioner.py -a MTART < 5_aa_partitions.txt > 5_aa_gene_partitions.txt 
 
 #                             #
 # PHYLOGENETIC RECONSTRUCTION # 
@@ -197,23 +206,24 @@ partitioner.py -a DNA -c -p 1 2 < 5_partitions.txt > 5_gene+codon12_partitions.t
 
 # First, you need to run partition finder and model finder to find the optimal set of partitions and the appropriate models for each
 
-iqtree -s 5_supermatrix.fasta -m MF+MERGE -T AUTO --threads-max 10 --prefix 6_nt_gene+codon123 -Q 5_gene+codon123_partitions.txt
-iqtree -s 5_supermatrix.fasta -m MF+MERGE -T AUTO --threads-max 10 --prefix 6_nt_gene+codon12 -Q 5_gene+codon12_partitions.txt
-iqtree -s 5_supermatrix.fasta -st CODON5 -msub mitochondrial -m MF+MERGE -T AUTO --threads-max 10 --prefix 6_aa_gene -Q 5_gene_partitions.txt
+iqtree -s 5_nt_supermatrix.fasta -m MF+MERGE -T AUTO --threads-max 10 --prefix 6_nt_gene+codon123 -Q 5_nt_gene+codon123_partitions.txt
+iqtree -s 5_nt_supermatrix.fasta -m MF+MERGE -T AUTO --threads-max 10 --prefix 6_nt_gene+codon12 -Q 5_nt_gene+codon12_partitions.txt
+
+iqtree -s 5_aa_supermatrix.fasta -msub mitochondrial -m MF+MERGE -T AUTO --threads-max 10 --prefix 6_aa_gene -Q 5_aa_gene_partitions.txt
 
 # Once these complete you can then use the output partition and model file in tree building runs
 
-iqtree -B 1000 -alrt 1000 -abayes -lbp 1000 -bnni -s 5_supermatrix.fasta -T AUTO --threads-max 10 --prefix 7_nt_gene+codon123 -Q 6_nt_gene+codon123.best_scheme.nex
-iqtree -B 1000 -alrt 1000 -abayes -lbp 1000 -bnni -s 5_supermatrix.fasta -T AUTO --threads-max 10 --prefix 7_nt_gene+codon12 -Q 6_nt_gene+codon12.best_scheme.nex
-iqtree -B 1000 -alrt 1000 -abayes -lbp 1000 -bnni -s 5_supermatrix.fasta -st CODON5 -T AUTO --threads-max 10 --prefix 7_aa_gene -Q 6_aa_gene.best_scheme.nex
+iqtree -B 1000 -alrt 1000 -abayes -lbp 1000 -bnni -s 5_nt_supermatrix.fasta -T AUTO --threads-max 10 --prefix 7_nt_gene+codon123 -Q 6_nt_gene+codon123.best_scheme.nex
+iqtree -B 1000 -alrt 1000 -abayes -lbp 1000 -bnni -s 5_nt_supermatrix.fasta -T AUTO --threads-max 10 --prefix 7_nt_gene+codon12 -Q 6_nt_gene+codon12.best_scheme.nex
+
+iqtree -B 1000 -alrt 1000 -abayes -lbp 1000 -bnni -s 5_aa_supermatrix.fasta -T AUTO --threads-max 10 --prefix 7_aa_gene -Q 6_aa_gene.best_scheme.nex
 
 # If you have a constraint tree you can run the above commands but with -g constraint.tre added 
 # (you'll want to modify the value to --prefix so that it doesn't overwrite the unconstrained version!)
 
 # If you've done constrained and unconstrained versions of the same data, you might want to compare with AU tests, here's an example
 cat 7_aa_gene.treefile 7_aa_gene_constrained.treefile > 7_aa_gene_uc+c_treefiles
-iqtree -s supermatrix.fasta -st CODON5 -Q aa_gene.best_scheme.nex -z 7_aa_gene_uc+c_treefiles -n 0 -zb 10000 -zw -au --prefix 7_aa_gene_treetests
-# (of course you'll want to remove -st CODON5 if running on nucleotide data)
+iqtree -s 5_aa_supermatrix.fasta -Q 6_aa_gene.best_scheme.nex -z 7_aa_gene_uc+c_treefiles -n 0 -zb 10000 -zw -au --prefix 7_aa_gene_treetests
 
 # Renaming trees
 # This is just one example, there's lots of things you can do with this script
