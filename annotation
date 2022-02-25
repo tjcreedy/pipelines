@@ -1,0 +1,131 @@
+# Use this pipeline to annotate a set of mitogenomes in a fasta file. The first two major steps are fully
+# automated, and the last step requires some manual work.
+
+#        #
+# SET UP #
+#        #
+
+# Create a new directory and place your mitogenome fasta file into it
+
+# You need to ensure you have various scripts and programs. Some of these are from github, some from elsewhere. 
+# You can acquire these scripts one of two ways. You can either clone the entire git repository to somewhere useful, in which case
+# you will need to modify the command paths to point to these scripts. Or you can download each script to your current directory.
+
+# To clone a repository, run the following line, replacing the author and repo parts with the relevant values
+git clone https://github.com/author/repo.git 
+# e.g.
+git clone https://github.com/tjcreedy/biotools.git
+
+# To download a single file, run the following line, replacing the author, repo, branch and name parts with the relevant values
+wget https://raw.githubusercontent.com/author/repo/branch/name
+# e.g.
+wget https://raw.githubusercontent.com/nylander/catfasta2phyml/master/catfasta2phyml.pl
+
+# tjcreedy/biotools:
+# extract_genes.pl
+# translate.py
+# split_fasta.pl
+
+# tjcreedy/mitocorrect:
+mitocorrect.py
+mitocorrect_modules.py
+specifications/mitocorrect_specifications_coleoptera_2022-02-24.tsv
+
+# You also need MitoZ, which has several different installation methods (see https://github.com/linzhi2013/MitoZ/blob/master/version_2.3/INSTALL.md)
+# We use as follows
+
+# Install udocker
+cd ~/
+mkdir software
+cd software
+git clone --depth=1 https://github.com/indigo-dc/udocker.git
+(cd udocker/udocker; ln -s maincmd.py udocker)  
+echo 'export PATH=~/software/udocker/udocker:$PATH' >> ~/.bashrc
+source ~/.bashrc
+udocker install   # if this doesn't work, log out and log in again
+
+# Download MitoZ
+udocker pull guanliangmeng/mitoz:2.3 # check and update the version number as necessary
+udocker images # should see mitoz on this list
+
+#                   #
+# PREPARE YOUR FILE #
+#                   #
+
+# You should have a single fasta file with unique headers and no headers with more than 16 characters.
+
+
+# Check your fasta has unique headers
+grep "^>" file.fasta | sort | uniq -d 
+# This shouldn't return anything - any headers that are returned are duplicated
+
+
+#                          #
+# RUN AUTOMATED ANNOTATION #
+#                          #
+
+# Split your fasta into separate files
+mkdir split_fasta
+perl split_fasta.pl -in mitogenomes.fasta -out split_fasta/
+
+# Set up an alias for the long MitoZ command
+alias mitoz="udocker run --rm --volume=$PWD --workdir=$PWD guanliangmeng/mitoz:2.3 /app/release_MitoZ_v2.3/MitoZ.py"
+
+# Run MitoZ
+mkdir mitoz_outputs/
+
+for file in split_fasta/*
+do
+   n=${file%.fa}; n=${n#*/}; 
+   mitoz annotate --clade Arthropoda --fastafile $file --outprefix $n --thread_number 10
+   rm -rf tmp/
+   cat $n.result/${n}_mitoscaf.fa.gbf >> annotated_contigs.gb
+   mv $n.result mitoz_outputs
+done
+
+# Remove the automatic metadata (optional)
+sed '/DEFINITION/,+17 d' annotated_contigs.gb > annotated_contigs_clean.gb
+
+#                 #
+# RUN MITOCORRECT #
+#                 #
+
+# You need to create a file that lists the paths to a set of alignment profiles, tab separated, e.g.:
+# "ATP6  /path/to/aa_profiles/ATP6.fasta"
+# "ATP8  /path/to/aa_profiles/ATP8.fasta"
+# I assume this is called profilepaths.tsv
+
+mitocorrect.py -s specifications.tsv -g annotated_contigs.gb -l name.log -a profilepaths.tsv  -o correctdir/ -t 10 -b 5 -c aa -r -m 0 -f
+
+# Check out the repository documentation to understand this command!
+
+#                 #
+# ALIGN THE GENES #
+#                 #
+
+# Extract genes
+mkdir 1_nt_raw
+extract_genes.pl -g correctdir/annotated_contigs.gb -out 1_nt_raw/ -k -regiontypes CDS
+
+# Translate
+mkdir 2_aa_raw
+for file in 1_nt_raw/*
+do
+   translate.py 5 < $file > 2_aa_raw/${file#*/}
+done
+
+# Align to profiles
+
+mkdir 3_aa_aln
+for file in 2_aa_raw/*
+do
+   mafft --addfragments $file --6merpair --anysymbol --thread 20 /path/to/aa_profiles/${file#*/} > 3_aa_aln/${file#*/}
+done
+
+#                #
+# MANUALLY CHECK #
+#                #
+
+# Manually review the alignments and edit the contigs
+
+#
