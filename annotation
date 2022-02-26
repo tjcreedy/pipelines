@@ -95,7 +95,7 @@ sed '/DEFINITION/,+17 d' annotated_contigs.gb > annotated_contigs_clean.gb
 # "ATP8  /path/to/aa_profiles/ATP8.fasta"
 # I assume this is called profilepaths.tsv
 
-mitocorrect.py -s specifications.tsv -g annotated_contigs.gb -l name.log -a profilepaths.tsv  -o correctdir/ -t 10 -b 5 -c aa -r -m 0 -f
+mitocorrect.py -s specifications.tsv -g annotated_contigs.gb -l name.log -a profilepaths.tsv  -o correctdir/ -t 10 -b 5 -c aa -r -m 0
 
 # Check out the repository documentation to understand this command!
 
