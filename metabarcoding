@@ -1,3 +1,6 @@
+# This is a pipeline template for metabarcoding, going from demultiplexed reads to OTUs and read abundance data.
+# See the Wiki for more details on these steps and the concepts behind them - this document should act as a reference only.
+
 ##                  ##
 ## READ PREPARATION ##
 ##                  ##
