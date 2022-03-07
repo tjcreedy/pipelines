@@ -1,3 +1,8 @@
+# This is a pipeline template for building a quick tree from barcode data from GenBank. 
+# See the Wiki for more details on these steps and the concepts behind them - this document should act as a reference only.
+# Note that the profile_annotation_phylogeny pipeline is generally more up-to-date and comprehensive than this one
+# for most phylogenetic applications
+
 # First, download some sequences from Genbank and place them in your working directory.
 # I'm assuming this file is called sequences.gb. If you have multiple genbank files, you can just concatenate them together (cat file1.gb file2.gb > sequences.gb)
 
@@ -41,12 +46,8 @@ backtranslate.py -r RF mygene_trimmed_unalign.fa 5 < mygene_trimmed_aa_globaln.f
 
   # If you used a profile alignment, make sure to remove the profile sequences from your alignment using an alignment viewer, or just a text editor.
   
-# You can now run a tree on this alignment. To do so in FastTree, run:
+  # You can now run a tree on this alignment. To do so in FastTree, run:
 FastTree -gtr -nt < mygene_trimmed_nt_globaln.fa > mygene.nwk
-
-  # Better to do it in RAxML on CIPRES
   
- # Rename the tree
+ # Rename the tree (NB this command is superseded by phylabel.R
 rename_newick_with_gb.pl -g sequences.gb -t mygene.nwk -o mygene_RN.nwk -fields LOCUS TAXONOMY -ntax 6
-
-
