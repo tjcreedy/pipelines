@@ -1,17 +1,19 @@
-# Switch to password authentication
+# This is a pipeline for setting up a new VPS to act as a bioinformatics server. 
+# It is not necessarily comprehensive in terms of VPS security nor software installed.
+# It should be used as a template only. Your VPS security is your own responsibility.
+# You may also want to see https://learnmetabarcoding.github.io/LearnMetabarcoding/gettingstarted/setup.html
+
+# Switch to password authentication (if needed)
 sudo sed -i "/^[^#]*PasswordAuthentication[[:space:]]no/c\PasswordAuthentication yes" /etc/ssh/sshd_config
 sudo service sshd restart
 
-# Change root password
+# Change root password (may need to change depending on VPS provider)
 sudo passwd ubuntu
 
 # Set up users and passwords
 echo \
 "thomas
-anna
-manolis
-victor
-andreas" > users.txt
+user2" > users.txt
 while read u; do
 	sudo adduser --disabled-password --gecos "" $u
 	echo $u:$u"123" | sudo chpasswd
