@@ -1,11 +1,11 @@
-# Use this pipeline to align a set of mitogenomes (and barcodes, if using) using one of our standard profiles, or to add a set 
-# of mitogenomes to a set of existing alignments.
-# If you have barcodes, these should be in a singe fasta file for each locus
-# If you need to make multiple trees, e.g. for different groups, you'd run this pipeline separately on each genbank/fasta file
+# Use this pipeline to go from a genbank file of mitogenomes to trees, and then optionally add barcodes or new mitogenomes
+# to these trees. If you've received a tree and supermatrix, you should do the SET UP section, then skip to the ADDING 
+# SEQUENCES section.
+# If you need to make multiple trees, e.g. for different taxa, you'd run this pipeline separately on each genbank/fasta file
 
-#        #
-# SET UP #
-#        #
+############
+## SET UP ##
+############
 
 # Create a new directory and place your mitogenomes and/or fasta file into it
 
@@ -46,16 +46,21 @@ chmod u+x extract_genes.pl
 perl extract_genes.pl
 python translate.py
 
-#                      #
-# ALIGNING MITOGENOMES #
-#                      #
+##########################
+## BUILDING A TREE FROM ##
+##   NEW MITOGENOMES    ##
+##########################
 
-## GENE EXTRACTION ##
+#           #
+# ALIGNMENT #
+#           #
+
+# GENE EXTRACTION
 
 mkdir 1_nt_raw
 extract_genes.pl -g yourmitogenomefile.gb -out 1_nt_raw/ -k -regiontypes CDS
 
-## TRANSLATION ##
+# TRANSLATION
 
 mkdir 2_aa_raw
 
@@ -70,7 +75,7 @@ done
 # translate.py 5 < 1_nt_raw/ATP6.fa > 2_aa_raw/ATP6.fa
 # Swapping ATP6 for the name of each of the genes you have
 
-## ALIGNMENT ##
+# ALIGNMENT
 
 mkdir 3_aa_aln
 
@@ -81,20 +86,12 @@ do
    mafft --addfragments $file --6merpair --anysymbol --thread 20 /path/to/aa/profiles/${file#*/} > 3_aa_aln/${file#*/}
 done
 
-# OR For an alignment where you're adding your sequences to an existing dataset
-for file in 2_aa_raw/*
-do
-   mafft --addfragments $file --6merpair --anysymbol --thread 20 /path/to/existing/aa/alignments/${file#*/} > 3_aa_aln/${file#*/}
-done
-
 
 # NOTE: to run this on a single file, e.g. ATP6, you'd do
 # mafft --addfragments 2_aa_raw/ATP6.fa --6merpair --anysymbol --thread 20 /path/to/aa/profiles/ATP6.fa > 3_aa_aln/ATP6.fa
 # Swapping ATP6 for the name of each of the genes you have
 
-
-## REMOVE PROFILE ##
-# Obviously skip this step if you want to keep the existing data in the alignment.
+# REMOVE PROFILE #
 
 cd 3_aa_aln
 
@@ -114,70 +111,30 @@ done
 
 cd ../
 
-## BACKTRANSLATE ##
+# BACKTRANSLATION
 
 mkdir 4_nt_aln
 
 ## Backtranslate all the individual gene files in 3_aa_aln in a loop with one command, putting the outputs into 3_nt_aln:
-# If you aligned against a profile and have removed it
 for file in 3_aa_aln/*
 do
    backtranslate.py -i $file 1_nt_raw/${file#*/} 5 > 4_nt_aln/${file#*/}
-done
-
-# OR If you aligned against existing sequences and want to keep them
-for file in 3_aa_aln/*
-do
-   cat /path/to/existing/nt/raw/${file#*/} 1_nt_raw/${file#*/} | backtranslate.py -i $file /dev/stdin 5 > 4_nt_aln/${file#*/}
 done
 
 # NOTE: to run this on a single file, e.g. ATP6, you'd do
 # backtranslate.py -i 3_aa_aln/ATP6.fa 1_nt_raw/ATP6.fa 5 > 4_nt_aln/ATP6.fa
 # Swapping ATP6 for the name of each of the genes you have
 
-#                 #
-# ADDING BARCODES #
-#                 #
-
-cp -Tr 4_nt_aln 5_nt_aln_final   # NB: -T treats directories as files, overwriting any contents that already exist
-
-# For each barcode locus file that you have
-
-mafft --addfragments yourbarcodefile.fa --6merpair --thread 20 4_nt_aln/thecorrespondinggenefile.fa > 5_nt_aln_final/thecorrespondinggenefile.fa
-
-# FOR EXAMPLE if you have a set of COX1 barcodes
-# mafft --addfragments yourbarcodefile.fa --6merpair --thread 20 4_nt_aln/COX1.fa > 5_nt_aln_final/COX1.fa
-#
-
-# IMPORTANT NOTE: if you intend to partition by codon, you should manually check the output file here to ensure that frame is still maintained
-
-#                     #
-# REDUCING ALIGNMENTS #
-#                     #
-
-# If you are performing tree-building with a backbone/constraint that comprises all of your mitogenomes, and you're only interested in the 
-# placement of the barcodes, you may strip out unneeded columns from the alignments to save tree building time.
-# Note that this might not technically be appropriate because adding more sequences may change the character variation in the existing taxa.
-# But it's probably fine if you just want to run quickly and don't intend to compare constrained vs unconstrained.
-
-mkdir 6_nt_aln_reduced
-
-# Create a list of the sequences that must not be reduced (i.e. your barcodes)
-grep -oP "(?<=^>).*$" yourbarcodefile.fa > preserved.txt
-
-# Run the script
-reducealign.py -a 5_nt_aln_final/* -p preserved.txt -r -o 6_nt_aln_reduced/
 
 #                     #
 # BULDING SUPERMATRIX #
 #                     #
 
 # Nucleotide supermatrix
-# Replace 4_nt_aln with 5_nt_aln_final if you added barcodes or 6_nt_aln_final if you added barcodes and reduced the alignments.
 
 catfasta2phyml.pl -c -fasta 4_nt_aln/* > 5_nt_supermatrix.fasta 2> 5_nt_partitions.txt
 
-# Amino acid supermatrix (currently only the input data, not with barcodes!)
+# Amino acid supermatrix
 
 catfasta2phyml.pl -c -fasta 3_aa_aln/* > 5_aa_supermatrix.fasta 2> 5_aa_partitions.txt
 
@@ -228,3 +185,111 @@ iqtree -s 5_aa_supermatrix.fasta -Q 6_aa_gene.best_scheme.nex -z 7_aa_gene_uc+c_
 # Renaming trees
 # This is just one example, there's lots of things you can do with this script
 phylabel.R -p tree.tre -o tree_RN.tre -r --taxonomy metadata.csv --taxlevels order,family,subfamily,genus
+
+######################
+## ADDING SEQUENCES ##
+######################
+
+#                       #
+# PREPARING SUPERMATRIX #
+#                       #
+
+# The theory here is pretty much as above, so we'll breeze through
+
+# GENBANK FILES
+
+# This step is for preparing data that comes in a genbank-format file, this might be whole mitogenomes or just
+# sequences for a single locus - the commands are the same. Skip this step if you have data in fasta file(s)
+
+mkdir 8_gbnt_raw
+extract_genes.pl -g yourgenbankfile.gb -out 8_gbnt_raw/ -k -regiontypes CDS
+
+# Here you may wish to check 8_mtnt_raw/ and delete any loci you're not interested in
+
+# FASTA FILE(S)
+
+# This step is for preparing data that comes in a fasta file. If you don't have this, skip this step
+# WARNING: before proceeding you should make sure each file contains only sequences of the same locus
+# and that these sequences are all in the forward reading direction
+
+mkdir 8_fant_raw
+
+# For each locus you have, run the following line
+mv yourlocusfile.fasta 8_fant_raw/gene.fa
+# e.g.
+mv myCOIfile.fasta 8_fant_raw/COX1.fa
+# You MUST use the exact file names that extract_genes.pl outputs, e.g.:
+# ATP6.fa, COX1.fa, CYTB.fa, ND1.fa, ND4L.fa etc
+# DOUBLE CHECK THIS NOW because the next step won't catch any errors!
+
+# MERGING FILES
+
+mkdir 8_nt_raw
+for file in 1_nt_raw/*
+do
+   cat 8_gbnt_raw/$file 8_fant_raw/$file > 8_adnt_raw/$file 2>/dev/null
+done
+
+# Clean up empty files
+find 8_adnt_raw/ -type f -empty -delete
+
+# ALIGNMENT
+
+mkdir 9_adnt_aln
+
+for file in 4_nt_aln/*
+do
+   name=${file#*/}
+   if [ -f "8_nt_raw/$file" ]
+   then
+      mafft --addfragments 8_nt_raw/$file --6merpair --thread 10 $file > 9_adnt_aln/${file#*/}
+   else
+      cp $file 9_adnt_aln/${file#*/}
+   fi
+done
+
+# REDUCING ALIGNMENTS
+
+# You may strip out unneeded columns from the alignments to save tree building time.
+# Note that this might not technically be appropriate because adding more sequences may change the character variation in the existing taxa.
+# But it's probably fine if you just want to run quickly and don't intend to compare constrained vs unconstrained.
+
+mkdir 9_adnt_aln_reduced
+
+# Create a list of the sequences that must not be reduced (i.e. your barcodes)
+grep -oP "(?<=^>).*$" 8_adnt_raw/*.fa | sort | uniq > preserved.txt
+
+# Run the script
+reducealign.py -a 9_adnt_aln/* -p preserved.txt -r -o 9_adnt_aln_reduced/
+
+# BULDING SUPERMATRIX 
+
+# Nucleotide supermatrix
+
+catfasta2phyml.pl -c -fasta 9_adnt_aln/* > 10_adnt_supermatrix.fasta 2> 10_adnt_partitions.txt
+
+# Check for no errors
+cat *ad*_partitions.txt
+
+#####################################################################
+### PIPELINE UNDER CONSTRUCTION, DO NOT PROCEED BEYOND THIS POINT ###
+#####################################################################
+
+
+# TODO: modify partitioner to accept input partition table as template for output configuration
+# TODO: modify partitioner to accept list of genes to lump
+
+#                             #
+# PHYLOGENETIC RECONSTRUCTION # 
+#                             #
+
+# TODO add -g and modify file names
+iqtree -B 1000 -alrt 1000 -abayes -lbp 1000 -bnni -s 5_nt_supermatrix.fasta -T AUTO --threads-max 10 --prefix 7_nt_gene+codon123 -Q 6_nt_gene+codon123.best_scheme.nex
+iqtree -B 1000 -alrt 1000 -abayes -lbp 1000 -bnni -s 5_nt_supermatrix.fasta -T AUTO --threads-max 10 --prefix 7_nt_gene+codon12 -Q 6_nt_gene+codon12.best_scheme.nex
+
+
+# Renaming trees
+# This is just one example, there's lots of things you can do with this script
+phylabel.R -p tree.tre -o tree_RN.tre -r --taxonomy metadata.csv --taxlevels order,family,subfamily,genus
+
+# If you have data for tips in different files, you'd need to run phylabel multiple times on the different files
