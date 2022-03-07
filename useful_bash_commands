@@ -1,0 +1,65 @@
+# This is not a pipeline per se, but more a record of useful bash one-liners (or multi-liners) to do
+# assorted low-level bioinformatics things. 
+# USE THESE COMMANDS AT YOUR OWN RISK
+# The documentation here is sparse, this is really my own record of handy commands but it's shared 
+# here for anyone else to use. I would strongly recommend you make sure you know exactly what a 
+# command is doing before you run it and backup any files before doing something that modifies them 
+# (e.g. the -i flag in sed).
+
+# Fix the header line on a genbank file if giving python errors
+sed -i -e "s/\(^LOCUS *[^ ]*\) *\([^ ].*$\)/\1   \2/" FILE.gb
+
+# Get the unique indices from a set of fastq files
+for f in *R1*.fastq; do sed -n '2~4p' $f | grep -oP ".{3,6}(?=CC.GA.AT.GC.TT.CC.CG)" ; done | sort | uniq -c > ../R1_indices.txt
+for f in *R2*.fastq; do sed -n '2~4p' $f | grep -oP ".{3,6}(?=TA.AC.TC.GG.TG.CC.AA.AA.CA)" ; done | sort | uniq -c > ../R2_indices.txt
+
+for d in *amplicons*; do for f in d/*R1*.fastq.gz; do pigz -p 15 -c -d $f | sed -n '2~4p' | grep -oP ".{3,6}(?=CC.GA.AT.GC.TT.CC.CG)" ; done | sort | uniq -c > indices/${d}_R1_indices.txt & for f in d/*R2*.fastq.gz; do pigz -p 15 -c -d $f | sed -n '2~4p' | grep -oP ".{3,6}(?=TA.AC.TC.GG.TG.CC.AA.AA.CA)" ; done | sort | uniq -c > indices/${d}_R2_indices.txt; done
+
+for d in *amplicons*; do for f in $d/*R1*.fastq.gz; do pigz -p 15 -c -d $f | sed -n '2~4p' | grep -oP ".{3,6}(?=CC.GA.AT.GC.TT.CC.CG)" >> ${d}_R1_temp ; done; sort ${d}_R1_temp | uniq -c > indices/${d}_R1_indices.txt; rm ${d}_R1_temp & for f in $d/*R2*.fastq.gz; do pigz -p 15 -c -d $f | sed -n '2~4p' | grep -oP ".{3,6}(?=TA.AC.TC.GG.TG.CC.AA.AA.CA)" >> ${d}_R2_temp ; done ; sort ${d}_R2_temp | uniq -c > indices/${d}_R2_indices.txt ; rm $d{d}_R2_temp ; done
+
+# Sort a set of indices produced above by the most frequent
+cat file | sort -k 1 -n -b -r
+
+# Get a list of unique indices that occur > 1k times and have all 6 bases
+cat file | egrep "[0-9]{4,}" | cut -c9-15 | egrep "[ATCG]{6}" | sort | uniq > unique_6bp_1kplus_indices.txt
+
+# Sum up the total number of indices (cut may need to be adjusted if any indices present >99m times
+cat file | cut -c1-7 | sed -e "s/ //g" | paste -sd+ | bc
+
+# Generate a dummy demux table from unique indices
+while read i; do for r in {A..H}; do for c in {01..12}; do echo -e "${i}_$r$c\t$i\t$i"; done; done; done < unique_6bp_1kplus_indices.txt > dummy_demux.tsv
+
+# Replace sequence characters on non-header lines (eg degap)
+for file in *; do sed -i -e "/^[^>]/s/-//g" $file; done
+
+# Get a specific genbank record from a multigenbank
+sed -n '/GBDL01640/,/^\/\//p' gbmaster_2020-03-11_autocorrect.gb
+
+# Demultiplex in one stupid long bash command
+while read s; do i=$(grep "^$s" demuxtable.tsv | awk '{ o=" -g " $1 "=" $2 " -G " $1 "=" $3; print o }' | tr -d '\n'); eval "cutadapt $i -o 0_demux/${on}R1.fastq -p 0_demux/${on}R2.fastq /av/NGSbackups/FWICA2015_amplicons/$s*.fastq.gz"; done < <(cut -f1 -d_ demuxtable.tsv  | sort | uniq | sed -e "s/$/_/g")
+for f in *; do s1=${f%-F*} ; s2=${f%_R*} ; s2="F${s2#*-F}"; e="_${f##*_}"; if [ $s1 != $s2 ]; then rm $f; else mv $f $s1$e; fi; done
+
+# Get the mean length and percent variation of the sequences in an (unwrapped!) fasta file
+sed '/^>/d' FILE | sed 's/-//g' | awk '{ print length }' | Rscript -e 'd<-scan("stdin", quiet=TRUE);print(c(round(mean(d),0), round(100 * mean(c(mean(d)-min(d),max(d)-mean(d)))/mean(d), 1)));'
+
+# Concatenate multiple fasta files excluding duplicate headers between files
+## First check that none of the files have duplicate headers within them
+for f in *.fa; do echo $f; grep "^>" $f | sort | uniq -c | cut -d$'>' -f1 | sort | uniq | wc -l; done
+## Create a starting file:
+cp file.fa > nodups.fasta
+## For each subequent file
+f=file2.fa; grep "^>" $f | while read l; do if ! grep -q "$l" nodups.fa; then grep -A1 "$l" $f >> nodups.fa; fi; done
+
+
+# Linearise/unwrap a fasta
+perl -pe '$. > 1 and /^>/ ? print "\n" : chomp' in.fa > out.fa
+
+# Do in silico PCR, allowing for only one primer matching:
+cutadapt -a "CCNGAYATRGCNTTYCCNCG;optional...TGRTTYTTYGGNCAYCCNGARGTNTA;optional" --discard-untrimmed -o out.fa in.fa 
+
+# Convert a .tbl file into a genbank feature table
+	# Needs first line removing and a source adding if desired
+sed -e "s/CDS/CDS /" -e "s/^\([0-9][0-9]*\)\t\([0-9][0-9]*\)\t\([a-zA-Z ]*\)$/    \3             \1..\2/g" -e "s/\t\t\t\([a-z]*\)\t\(.*\)$/                     \/\1=\"\2\"/" SDLO019.tbl 
+
+# Generate a random fasta alignment
+paste -d '\n' <(for i in {01..30}; do echo ">seq$i"; done) <( cat /dev/urandom | tr -dc 'ATCG-' | fold -w 300 | head -n 30 )

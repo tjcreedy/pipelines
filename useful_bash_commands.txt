@@ -1,2 +1,0 @@
-# Fix the header line on a genbank file if giving python errors
-sed -i -e "s/\(^LOCUS *[^ ]*\) *\([^ ].*$\)/\1   \2/" FILE.gb
