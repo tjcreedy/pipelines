@@ -1,3 +1,5 @@
+# This is an archived copy of the commands needed for the phylogenetics section of the 
+# Analysis of Metagenomic data for Macroecology workshop, Cyprus October 2019
 
 # Copy files over
 cp -r /AMM/resources/metagenomics/* ./
