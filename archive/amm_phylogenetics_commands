@@ -1,3 +1,5 @@
+# This is an archived copy of the commands needed for the phylogenetics section of the 
+# Analysis of Metagenomic data for Macroecology workshop, Cyprus October 2019
 
 # Copy over the references
 cp /AMM/references/GBdl_RefSeq_ColeopMT_2019-09-20.gb ./
