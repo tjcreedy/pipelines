@@ -2,8 +2,6 @@
 # individual sequences per sample. See the Wiki for more details on these steps and the concepts
 # behind them - this document should act as a reference only.
 
-# See the metabarcoding pipeline if you need to do demultiplexing
-
 # A command for running trimming on paired files in a loop. Assumes _R[12].fq. Make sure to check directory names and insert any project names into the for loop to ensure you don't run on anyone else's files. -g is forward, -G is reverse primer
 
 mkdir 1_trimmed
