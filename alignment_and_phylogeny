@@ -44,7 +44,7 @@ chmod u+x extract_genes.pl
 
 # Alternatively, you can specify the interpreter before the script name, e.g.
 perl extract_genes.pl
-python translate.py
+python3 translate.py
 
 ##########################
 ## BUILDING A TREE FROM ##
