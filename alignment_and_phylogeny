@@ -143,12 +143,14 @@ catfasta2phyml.pl -c -fasta 3_aa_aln/* > 5_aa_supermatrix.fasta 2> 5_aa_partitio
 cat *partitions.txt
 
 # Generate maximal partition tables for NT data
+# NB if you get an error about an unrecognised argument, redownload partitioner.py
+
 # Partition by genes
 partitioner.py -a DNA < 5_nt_partitions.txt > 5_nt_gene_partitions.txt
 # Partition by genes and all three codon positions
 partitioner.py -a DNA -c < 5_nt_partitions.txt > 5_nt_gene+codon123_partitions.txt
 # Partition by genes and first two codon positions
-partitioner.py -a DNA -c -p 1 2 < 5_nt_partitions.txt > 5_nt_gene+codon12_partitions.txt
+partitioner.py -a DNA -c -u 1 2 < 5_nt_partitions.txt > 5_nt_gene+codon12_partitions.txt
 
 # Generate maximal partition tables for AA data
 partitioner.py -a MTART < 5_aa_partitions.txt > 5_aa_gene_partitions.txt 
