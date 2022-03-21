@@ -230,10 +230,10 @@ mv myCOIfile.fasta 8_fant_raw/COX1.fa
 
 # MERGING FILES
 
-mkdir 8_nt_raw
+mkdir 8_adnt_raw
 for file in 1_nt_raw/*
 do
-   cat 8_gbnt_raw/$file 8_fant_raw/$file > 8_adnt_raw/$file 2>/dev/null
+   cat 8_gbnt_raw/${file#*/} 8_fant_raw/${file#*/} > 8_adnt_raw/${file#*/} 2>/dev/null
 done
 
 # Clean up empty files
