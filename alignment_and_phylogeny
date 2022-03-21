@@ -246,11 +246,11 @@ mkdir 9_adnt_aln
 for file in 4_nt_aln/*
 do
    name=${file#*/}
-   if [ -f "8_nt_raw/$file" ]
+   if [ -f "8_adnt_raw/$name" ]
    then
-      mafft --addfragments 8_nt_raw/$file --6merpair --thread 10 $file > 9_adnt_aln/${file#*/}
+      mafft --addfragments 8_adnt_raw/$name --6merpair --thread 10 $file > 9_adnt_aln/$name
    else
-      cp $file 9_adnt_aln/${file#*/}
+      cp $file 9_adnt_aln/$name
    fi
 done
 
