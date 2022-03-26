@@ -55,6 +55,9 @@ python3 translate.py
 # ALIGNMENT #
 #           #
 
+# NOTE ABOUT NOTES: the below code uses a lot of loops to work through the PCGs, code for running on individual genes 
+# is provided for reference in a NOTE below the loop but this isn't needed if you want to just run on all genes
+
 # GENE EXTRACTION
 
 mkdir 1_nt_raw
@@ -71,7 +74,7 @@ do
    translate.py 5 < $file > 2_aa_raw/${file#*/}
 done
 
-# NOTE: to run this on a single file, e.g. ATP6, you'd do
+# NOTE: if you wanted to run this on a single file, e.g. ATP6, you'd do
 # translate.py 5 < 1_nt_raw/ATP6.fa > 2_aa_raw/ATP6.fa
 # Swapping ATP6 for the name of each of the genes you have
 
@@ -87,7 +90,7 @@ do
 done
 
 
-# NOTE: to run this on a single file, e.g. ATP6, you'd do
+# NOTE: if you wanted to run this on a single file, e.g. ATP6, you'd do
 # mafft --addfragments 2_aa_raw/ATP6.fa --6merpair --anysymbol --thread 20 /path/to/aa/profiles/ATP6.fa > 3_aa_aln/ATP6.fa
 # Swapping ATP6 for the name of each of the genes you have
 
@@ -103,8 +106,8 @@ do
    rm ${file}_bak
 done
 
-# NOTE: to run this on a single file, e.g. ATP6, you'd do
-# mv ATP6.fa > ATP6.fa_bak
+# NOTE: if you wanted to run this on a single file, e.g. ATP6, you'd do
+# mv ATP6.fa ATP6.fa_bak
 # perl -pe '$. > 1 and /^>/ ? print "\n" : chomp' ATP6.fa_bak | grep -A 1 -P '^>(?!PROFILE::).*' > ATP6.fa
 # rm ATP6.fa_bak
 # Swapping ATP6 for the name of each of the genes you have
@@ -121,7 +124,7 @@ do
    backtranslate.py -i $file 1_nt_raw/${file#*/} 5 > 4_nt_aln/${file#*/}
 done
 
-# NOTE: to run this on a single file, e.g. ATP6, you'd do
+# NOTE: if you wanted to run this on a single file, e.g. ATP6, you'd do
 # backtranslate.py -i 3_aa_aln/ATP6.fa 1_nt_raw/ATP6.fa 5 > 4_nt_aln/ATP6.fa
 # Swapping ATP6 for the name of each of the genes you have
 
