@@ -34,6 +34,7 @@ wget https://raw.githubusercontent.com/nylander/catfasta2phyml/master/catfasta2p
 # tjcreedy/phylostuff
 # partitioner.py
 # phylabel.R
+# taxonomicindices.R
 
 # If you get errors running any of these scripts, you may need to make them executable. You can do this by running
 chmod u+x script
