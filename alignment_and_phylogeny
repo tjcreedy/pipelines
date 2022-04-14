@@ -191,6 +191,11 @@ iqtree -B 1000 -alrt 1000 -abayes -lbp 1000 -bnni -s 5_aa_supermatrix.fasta -T A
 cat 7_aa_gene.treefile 7_aa_gene_constrained.treefile > 7_aa_gene_uc+c_treefiles
 iqtree -s 5_aa_supermatrix.fasta -Q 6_aa_gene.best_scheme.nex -z 7_aa_gene_uc+c_treefiles -n 0 -zb 10000 -zw -au --prefix 7_aa_gene_treetests
 
+# You may want to assess the taxonomic Consistency or Retention indices of your trees. 
+# You can use the following command, obviously change for each tree and you may want to switch the taxonomic level you use
+# -o is not required - see the help to check different output options
+taxonomicindices.R -p tree.tre -t metadata.csv -l family -o tree_tax_indices.csv
+
 # Renaming trees
 # This is just one example, there's lots of things you can do with this script
 phylabel.R -p tree.tre -o tree_RN.tre -r --taxonomy metadata.csv --taxlevels order,family,subfamily,genus
