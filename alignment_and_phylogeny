@@ -24,7 +24,7 @@ wget https://raw.githubusercontent.com/author/repo/branch/name
 wget https://raw.githubusercontent.com/nylander/catfasta2phyml/master/catfasta2phyml.pl
 
 # tjcreedy/biotools:
-# extract_genes.pl
+# extract_genes.py
 # translate.py
 # backtranslate.py
 
@@ -52,9 +52,11 @@ python3 translate.py
 ##   NEW MITOGENOMES    ##
 ##########################
 
-#           #
-# ALIGNMENT #
-#           #
+#                   #
+# ALIGNMENT OF PCGs #
+#                   #
+
+# This pipeline is for protein coding genes only - for a pipeline for RNA genes, see the next section
 
 # NOTE ABOUT NOTES: the below code uses a lot of loops to work through the PCGs, code for running on individual genes 
 # is provided for reference in a NOTE below the loop but this isn't needed if you want to just run on all genes
@@ -62,7 +64,7 @@ python3 translate.py
 # GENE EXTRACTION
 
 mkdir 1_nt_raw
-extract_genes.pl -g yourmitogenomefile.gb -out 1_nt_raw/ -k -regiontypes CDS
+extract_genes.py -g yourmitogenomefile.gb -o 1_nt_raw/ -k --genetypes CDS
 
 # TRANSLATION
 
@@ -87,7 +89,7 @@ mkdir 3_aa_aln
 # For a profile alignment (where you want only your sequences, you're just using the profile to help align)
 for file in 2_aa_raw/*
 do
-   mafft --addfragments $file --6merpair --anysymbol --thread 20 /path/to/aa/profiles/${file#*/} > 3_aa_aln/${file#*/}
+   mafft --addfragments $file --6merpair --anysymbol --thread 10 /path/to/aa/profiles/${file#*/} > 3_aa_aln/${file#*/}
 done
 
 
@@ -129,6 +131,26 @@ done
 # backtranslate.py -i 3_aa_aln/ATP6.fa 1_nt_raw/ATP6.fa 5 > 4_nt_aln/ATP6.fa
 # Swapping ATP6 for the name of each of the genes you have
 
+#                       #
+# ALIGNMENT OF NON-PCGs #
+#                       #
+
+# This is a modification of the above pipeline to add in non-PCGs
+
+# EXTRACTION
+
+mkdir 1r_nt_raw/
+extract_genes.py -g yourmitogenomefile.gb -o 1_nt_raw/ -k --genetypes rRNA tRNA
+# You could put only rRNA or only tRNA if you wanted
+
+# ALIGNMENT
+
+mkdir 4r_nt_aln/
+for file in 1r_nt_raw/*
+do
+   mafft --globalpair --maxiterate 1000 --thread 10 $file > 4r_nt_aln/${file#*/}
+done
+
 
 #                     #
 # BULDING SUPERMATRIX #
@@ -137,12 +159,16 @@ done
 # Nucleotide supermatrix
 
 catfasta2phyml.pl -c -fasta 4_nt_aln/* > 5_nt_supermatrix.fasta 2> 5_nt_partitions.txt
+   # Or with non-PCGs as well
+catfasta2phyml.pl -c -fasta 4_nt_aln/* 4r_nt_aln/* > 5_nt_supermatrix.fasta 2> 5_nt_partitions.txt
 
 # Amino acid supermatrix
 
 catfasta2phyml.pl -c -fasta 3_aa_aln/* > 5_aa_supermatrix.fasta 2> 5_aa_partitions.txt
 
+# Combined AA supermatrix for PCGs + NT supermatrix for non-PCGs
 
+catfasta2phyml.pl -c -fasta 3_aa_aln/* 4r_nt_aln/* > 5_aant_supermatrix.fasta 2> 5_aant_partitions.txt
 # Check for no errors
 cat *partitions.txt
 
@@ -159,6 +185,10 @@ partitioner.py -a DNA -c -u 1 2 < 5_nt_partitions.txt > 5_nt_gene+codon12_partit
 # Generate maximal partition tables for AA data
 partitioner.py -a MTART < 5_aa_partitions.txt > 5_aa_gene_partitions.txt 
 
+# Note partitioner.py does not work with supermatrices of combined data. I suggest you build the supermatrices separately,
+# run partitioner on them separately, then use catfasta2phyml to concatenate the two supermatrices and manually combine
+# and edit the partition tables. Sorry.
+
 #                             #
 # PHYLOGENETIC RECONSTRUCTION # 
 #                             #
@@ -168,6 +198,7 @@ partitioner.py -a MTART < 5_aa_partitions.txt > 5_aa_gene_partitions.txt
 # YOU SHOULD NOT JUST RUN THESE COMMANDS. Read the IQTREE manual to understand what they're doing 
 # http://www.iqtree.org/doc/iqtree-doc.pdf
 
+# All of these commands could be used with combined supermatrices too.
 
 # First, you need to run partition finder and model finder to find the optimal set of partitions and the appropriate models 
 # for each
@@ -216,7 +247,7 @@ phylabel.R -p tree.tre -o tree_RN.tre -r --taxonomy metadata.csv --taxlevels ord
 # This step is for preparing data that comes in a genbank-format file, this might be whole mitogenomes or just
 # sequences for a single locus - the commands are the same. Skip this step if you have data in fasta file(s)
 
-mkdir 8_gbnt_raw
+mkdir 81_gbnt_raw
 extract_genes.pl -g yourgenbankfile.gb -out 8_gbnt_raw/ -k -regiontypes CDS
 
 # Here you may wish to check 8_mtnt_raw/ and delete any loci you're not interested in
@@ -227,41 +258,72 @@ extract_genes.pl -g yourgenbankfile.gb -out 8_gbnt_raw/ -k -regiontypes CDS
 # WARNING: before proceeding you should make sure each file contains only sequences of the same locus
 # and that these sequences are all in the forward reading direction
 
-mkdir 8_fant_raw
+mkdir 81_fant_raw
 
 # For each locus you have, run the following line
 mv yourlocusfile.fasta 8_fant_raw/gene.fa
 # e.g.
 mv myCOIfile.fasta 8_fant_raw/COX1.fa
+
 # You MUST use the exact file names that extract_genes.pl outputs, e.g.:
 # ATP6.fa, COX1.fa, CYTB.fa, ND1.fa, ND4L.fa etc
 # DOUBLE CHECK THIS NOW because the next step won't catch any errors!
 
 # MERGING FILES
 
-mkdir 8_adnt_raw
+mkdir 81_adnt_raw
 for file in 1_nt_raw/*
 do
-   cat 8_gbnt_raw/${file#*/} 8_fant_raw/${file#*/} > 8_adnt_raw/${file#*/} 2>/dev/null
+   cat 81_gbnt_raw/${file#*/} 81_fant_raw/${file#*/} > 81_adnt_raw/${file#*/} 2>/dev/null
 done
 
 # Clean up empty files
-find 8_adnt_raw/ -type f -empty -delete
+find 81_adnt_raw/ -type f -empty -delete
+
+# TRANSLATION
+
+mkdir 82_adaa_raw
+for file in 81_adnt_raw
+do
+   findframe.py -t 5 -u -r /path/to/aa/profiles/${file#*/} -s < $file | translate.py 5 > 82_adaa_raw/${file#*/}
+done
+
+# Note that the translated files will have a frame tag added to the header of each sequence
 
 # ALIGNMENT
 
-mkdir 9_adnt_aln
+mkdir 83_adaa_aln
 
-for file in 4_nt_aln/*
+for file in 3_aa_aln/*
 do
    name=${file#*/}
-   if [ -f "8_adnt_raw/$name" ]
+   if [ -f "82_adaa_raw/$name" ]
    then
-      mafft --addfragments 8_adnt_raw/$name --6merpair --thread 10 $file > 9_adnt_aln/$name
+      mafft --addfragments 82_adaa_raw/$name --6merpair --anysymbol --thread 10 $file > 83_adaa_aln/$name
    else
-      cp $file 9_adnt_aln/$name
+      cp $file 83_adaa_aln/$name
    fi
 done
+
+# BACKTRANSLATION
+
+mkdir 84_adnt_aln
+for file in 83_adaa_aln/*
+do
+   backtranslate.py -s -i $file 81_nt_raw/${file#*/} 5 > 84_adaa_aln/${file#*/}
+done
+
+# Now that we've backtranslated, we need to remove the frame tag from the headers of the aligned amino acid 
+# files. Make sure the aligned nucleotides look right first - if you need to redo this step after running 
+# the following lines, you'll need to redo the alignment step first
+
+for file in 83_adaa_aln/*
+do
+   sed -i -e "s/;frame=[0-9]*(;$)?//" $file
+done
+
+# NOTE: from now on the commands will just refer to NT files, but everything can be run with AA files instead 
+# or as well, just as in the base pipeline above
 
 # REDUCING ALIGNMENTS
 
