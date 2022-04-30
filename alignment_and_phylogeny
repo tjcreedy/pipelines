@@ -64,7 +64,7 @@ python3 translate.py
 # GENE EXTRACTION
 
 mkdir 1_nt_raw
-extract_genes.py -g yourmitogenomefile.gb -o 1_nt_raw/ -k --genetypes CDS
+extract_genes.py -g yourmitogenomefile.gb -out 1_nt_raw/ -k --genetypes CDS
 
 # TRANSLATION
 
