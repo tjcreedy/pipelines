@@ -18,10 +18,10 @@ mkdir 1_trimmed
 rm -f 1_trim_report.txt
 
     # Do trimming, make sure that primers are right: -g is forward, -G is reverse primer. -j is threads, don't increase!
-
+    # Update: because of ambiguities, the beginning of the forward primer can be matched by the end, i.e CCN = NCG, CCNG = CNCG. So for this primer we set a larger-than-default minimum overlap.
 for s in $samples
 do
-   cutadapt -j 20 -g CCNGAYATRGCNTTYCCNCG -G TANACYTCNGGRTGNCCRAARAAYCA -o 1_trimmed/${s}_R1.fastq -p 1_trimmed/${s}_R2.fastq --minimum-length 50 --discard-untrimmed 0_demux/${s}_R1.fastq 0_demux/${s}_R2.fastq 2>&1 | tee -a 1_trim_report.txt
+   cutadapt -j 20 -g "CCNGAYATRGCNTTYCCNCG;min_overlap=5" -G TANACYTCNGGRTGNCCRAARAAYCA -o 1_trimmed/${s}_R1.fastq -p 1_trimmed/${s}_R2.fastq --minimum-length 50 --discard-untrimmed 0_demux/${s}_R1.fastq 0_demux/${s}_R2.fastq 2>&1 | tee -a 1_trim_report.txt
 done
 
     # --minimum-length 50 discards reads shorter than 50bp, as these are undoubtedly errors and it's a waste of later computation time keeping them
