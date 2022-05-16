@@ -89,7 +89,7 @@ mkdir 3_aa_aln
 # For a profile alignment (where you want only your sequences, you're just using the profile to help align)
 for file in 2_aa_raw/*
 do
-   mafft --addfragments $file --6merpair --anysymbol --thread 10 /path/to/aa/profiles/${file#*/} > 3_aa_aln/${file#*/}
+   mafft --add $file --6merpair --anysymbol --thread 10 /path/to/aa/profiles/${file#*/} > 3_aa_aln/${file#*/}
 done
 
 
