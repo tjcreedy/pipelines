@@ -140,7 +140,7 @@ done
 # EXTRACTION
 
 mkdir 1r_nt_raw/
-extract_genes.py -g yourmitogenomefile.gb -o 1_nt_raw/ -k --genetypes rRNA tRNA
+extract_genes.py -g yourmitogenomefile.gb -o 1r_nt_raw/ -k --genetypes rRNA tRNA
 # You could put only rRNA or only tRNA if you wanted
 
 # ALIGNMENT
