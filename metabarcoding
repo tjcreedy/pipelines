@@ -203,8 +203,12 @@ get_NCBI_taxonomy.py -i otus_nt_blast_MEGAN.txt -l /av/references/NCBI_taxonomy.
 blastn -query otus.fasta -subject references.fasta -outfmt 6 -out otus_reference_blast.txt -num_threads 1 -evalue 0.001 -perc_identity 97
 
   # Using SINTAX vs the MIDORI dataset.
-midorilocation="/av/references/MIDORI_UNIQ_GB239_CO1_SINTAX.udb"
-vsearch -sintax otus.fasta -db $midorilocation -tabbedout otus_midori_sintax.tsv -strand both -sintax_cutoff 1
+# Go to http://reference-midori.info/download/Databases/ and check the most recent version to update the following commands
+        # Make the database
+wget http://reference-midori.info/download/Databases/GenBank249/SINTAX/uniq/MIDORI_UNIQ_NUC_GB249_CO1_SINTAX.fasta.gz
+gzip -d MIDORI_UNIQ_NUC_GB249_CO1_SINTAX.fasta.gz
+vsearch --makeudb_usearch MIDORI_UNIQ_GB249_CO1_SINTAX.fasta --output MIDORI_UNIQ_GB249_CO1_SINTAX.udb
+vsearch -sintax otus.fasta -db MIDORI_UNIQ_GB249_CO1_SINTAX.udb -tabbedout otus_midori_sintax.tsv -strand both -sintax_cutoff 1
 
   # Filtering sequences based on a SINTAX output
 filter_fasta_by_sintax.py -f otus.fasta -s otus_midori_sintax.tsv -t o:Coleoptera > otus_filtered.fasta
