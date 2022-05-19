@@ -85,6 +85,8 @@ done
 
 mkdir 3_aa_aln
 
+# Option 1: against a profile
+
 ## Align all the individual gene files in 2_aa_raw in a loop with one command, putting the outputs into 3_aa_aln:
 # For a profile alignment (where you want only your sequences, you're just using the profile to help align)
 for file in 2_aa_raw/*
@@ -92,12 +94,11 @@ do
    mafft --add $file --6merpair --anysymbol --thread 10 /path/to/aa/profiles/${file#*/} > 3_aa_aln/${file#*/}
 done
 
-
 # NOTE: if you wanted to run this on a single file, e.g. ATP6, you'd do
 # mafft --addfragments 2_aa_raw/ATP6.fa --6merpair --anysymbol --thread 20 /path/to/aa/profiles/ATP6.fa > 3_aa_aln/ATP6.fa
 # Swapping ATP6 for the name of each of the genes you have
 
-# REMOVE PROFILE #
+# Remove profile
 
 cd 3_aa_aln
 
@@ -116,6 +117,13 @@ done
 # Swapping ATP6 for the name of each of the genes you have
 
 cd ../
+
+# Option 2: de novo 
+
+for file in 2_aa_raw/*
+do
+   mafft --globalpair --maxiterate 1000 --anysymbol --thread 10 $file > 3_aa_aln/${file#*/}
+done
 
 # BACKTRANSLATION
 
