@@ -227,6 +227,8 @@ iqtree -s 5_aa_supermatrix.fasta -Q 6_aa_gene.best_scheme.nex -z 7_aa_gene_uc+c_
 # You can use the following command, obviously change for each tree and you may want to switch the taxonomic level you use
 # -o is not required - see the help to check different output options
 taxonomicindices.R -p tree.tre -t metadata.csv -l family -o tree_tax_indices.csv
+### WARNING: taxonomicindices.R currently isn't working as expected!! ###
+
 
 # Renaming trees
 # This is just one example, there's lots of things you can do with this script
