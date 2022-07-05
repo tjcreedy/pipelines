@@ -345,7 +345,7 @@ done
 
 for file in 83_adaa_aln/*
 do
-   sed -i -e "s/;frame=[0-9]*(;$)?//" $file
+   sed -i -E "s/;frame=[0-9]*(;$)?//" $file
 done
 
 # NOTE: from now on the commands will just refer to NT files, but everything can be run with AA files instead 
