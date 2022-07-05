@@ -332,7 +332,7 @@ do
    cat $file 81_adnt_raw/${file#*/} > 81_alladnt_raw/${file#*/} 2> /dev/null
 done
 
-
+# Now do the backtranslation
 mkdir 84_adnt_aln
 for file in 83_adaa_aln/*
 do
