@@ -258,7 +258,7 @@ phylabel.R -p tree.tre -o tree_RN.tre -r --taxonomy metadata.csv --taxlevels ord
 # sequences for a single locus - the commands are the same. Skip this step if you have data in fasta file(s)
 
 mkdir 81_gbnt_raw
-extract_genes.pl -g yourgenbankfile.gb -out 8_gbnt_raw/ -k -regiontypes CDS
+extract_genes.pl -g yourgenbankfile.gb -out 81_gbnt_raw/ -k -regiontypes CDS
 
 # Here you may wish to check 8_mtnt_raw/ and delete any loci you're not interested in
 
@@ -279,7 +279,9 @@ mv myCOIfile.fasta 8_fant_raw/COX1.fa
 # ATP6.fa, COX1.fa, CYTB.fa, ND1.fa, ND4L.fa etc
 # DOUBLE CHECK THIS NOW because the next step won't catch any errors!
 
-# MERGING FILES
+# FINAL PREP
+
+# If you have both fasta and genbank files, run this
 
 mkdir 81_adnt_raw
 for file in 1_nt_raw/*
@@ -290,10 +292,16 @@ done
 # Clean up empty files
 find 81_adnt_raw/ -type f -empty -delete
 
+# Otherwise if you have genbank files only
+mv 81_gbnt_raw 81_adnt_raw
+
+# Otherwise if you have fasta files only
+mv 81_fant_raw 81_adnt_raw
+
 # TRANSLATION
 
-mkdir 82_adaa_raw
-for file in 81_adnt_raw
+mkdir 82_faaa_raw
+for file in 81_fant_raw
 do
    findframe.py -t 5 -u -r /path/to/aa/profiles/${file#*/} -s < $file | translate.py 5 > 82_adaa_raw/${file#*/}
 done
