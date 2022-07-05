@@ -325,6 +325,14 @@ done
 
 # BACKTRANSLATION
 
+# First compile all raw nt data
+mkdir 81_alladnt_raw
+for file in 1_nt_raw/*
+do
+   cat $file 81_adnt_raw/${file#*/} > 81_alladnt_raw/${file#*/} 2> /dev/null
+done
+
+
 mkdir 84_adnt_aln
 for file in 83_adaa_aln/*
 do
