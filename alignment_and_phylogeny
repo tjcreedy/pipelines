@@ -27,6 +27,7 @@ wget https://raw.githubusercontent.com/nylander/catfasta2phyml/master/catfasta2p
 # extract_genes.py
 # translate.py
 # backtranslate.py
+# findframe.py
 
 # nylander/catfasta2phyml
 # catfasta2phyml.pl 
@@ -336,7 +337,7 @@ done
 mkdir 84_adnt_aln
 for file in 83_adaa_aln/*
 do
-   backtranslate.py -s -i $file 81_nt_raw/${file#*/} 5 > 84_adaa_aln/${file#*/}
+   backtranslate.py -s -i $file 81_alladnt_raw/${file#*/} 5 > 84_adnt_aln/${file#*/}
 done
 
 # Now that we've backtranslated, we need to remove the frame tag from the headers of the aligned amino acid 
