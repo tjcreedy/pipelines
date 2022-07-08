@@ -258,7 +258,7 @@ phylabel.R -p tree.tre -o tree_RN.tre -r --taxonomy metadata.csv --taxlevels ord
 # sequences for a single locus - the commands are the same. Skip this step if you have data in fasta file(s)
 
 mkdir 81_gbnt_raw
-extract_genes.pl -g yourgenbankfile.gb -out 81_gbnt_raw/ -k -regiontypes CDS
+extract_genes.py -g yourgenbankfile.gb -o 81_gbnt_raw/ -k --genetypes CDS
 
 # Here you may wish to check 8_mtnt_raw/ and delete any loci you're not interested in
 
@@ -271,12 +271,12 @@ extract_genes.pl -g yourgenbankfile.gb -out 81_gbnt_raw/ -k -regiontypes CDS
 mkdir 81_fant_raw
 
 # For each locus you have, run the following line
-mv yourlocusfile.fasta 8_fant_raw/gene.fa
+mv yourlocusfile.fasta 8_fant_raw/gene.fasta
 # e.g.
-mv myCOIfile.fasta 8_fant_raw/COX1.fa
+mv myCOIfile.fasta 8_fant_raw/COX1.fasta
 
-# You MUST use the exact file names that extract_genes.pl outputs, e.g.:
-# ATP6.fa, COX1.fa, CYTB.fa, ND1.fa, ND4L.fa etc
+# You MUST use the exact file names that extract_genes.py outputs, e.g.:
+# ATP6.fasta, COX1.fasta, CYTB.fasta, ND1.fasta, ND4L.fasta etc
 # DOUBLE CHECK THIS NOW because the next step won't catch any errors!
 
 # FINAL PREP
