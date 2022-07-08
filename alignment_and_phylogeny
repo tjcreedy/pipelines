@@ -260,7 +260,7 @@ phylabel.R -p tree.tre -o tree_RN.tre -r --taxonomy metadata.csv --taxlevels ord
 mkdir 81_gbnt_raw
 extract_genes.py -g yourgenbankfile.gb -o 81_gbnt_raw/ -k --genetypes CDS
 
-# Here you may wish to check 8_mtnt_raw/ and delete any loci you're not interested in
+# Here you may wish to check 8_gbnt_raw/ and delete any loci you're not interested in
 
 # FASTA FILE(S)
 
@@ -300,8 +300,8 @@ mv 81_fant_raw 81_adnt_raw
 
 # TRANSLATION
 
-mkdir 82_faaa_raw
-for file in 81_fant_raw
+mkdir 82_adaa_raw
+for file in 81_adnt_raw
 do
    findframe.py -t 5 -u -r /path/to/aa/profiles/${file#*/} -s < $file | translate.py 5 > 82_adaa_raw/${file#*/}
 done
