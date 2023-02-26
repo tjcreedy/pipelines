@@ -251,12 +251,26 @@ phylabel.R -p tree.tre -o tree_RN.tre -r --taxonomy metadata.csv --taxlevels ord
 # PREPARING SUPERMATRIX #
 #                       #
 
-# The theory here is pretty much as above, so we'll breeze through
+# The theory here is pretty much as above, so we'll breeze through. It assumes that you've already run the
+# above code to build your constraint tree. If you have not, STOP and do the following
+#  1 If you've been given a constraint tree and the mitogenome sequences in genbank format, you should start
+#     at the beginning of this pipeline and run up until the end of the ALIGNMENT section
+#  2 If you've been given a constraint tree and some amino acid alignments, put those alignments into a 
+#     directory called 3_aa_aln and make sure they're named only with the gene names
+#  3 If you've been given a constraint tree and anything else (a supermatrix, nucleotide alignments, etc),
+#     throw away the supermatrix and nucleotide alignments, extract the names of the tips in the tree using
+#     phynames.R -p constraint.tre > constrainttips.txt, use this to extract data from the MMGdatabase, then
+#     go to 1
+
+# Assuming the above is fine, the next sections refer only to data that you want to add to your existing tree,
+# you do not need to do anything further with the mitogenomes you used to build your constraint, that data will
+# be pulled from 3_aa_aln later.
 
 # GENBANK FILES
 
-# This step is for preparing data that comes in a genbank-format file, this might be whole mitogenomes or just
-# sequences for a single locus - the commands are the same. Skip this step if you have data in fasta file(s)
+# This step is for preparing data TO ADD that comes in a genbank-format file, this might be whole mitogenomes 
+# or just sequences for a single locus - the commands are the same. Skip this step if the data TO ADD is only 
+# in fasta file(s)
 
 mkdir 81_gbnt_raw
 extract_genes.py -g yourgenbankfile.gb -o 81_gbnt_raw/ -k --genetypes CDS
@@ -265,16 +279,16 @@ extract_genes.py -g yourgenbankfile.gb -o 81_gbnt_raw/ -k --genetypes CDS
 
 # FASTA FILE(S)
 
-# This step is for preparing data that comes in a fasta file. If you don't have this, skip this step
+# This step is for preparing data TO ADD that comes in a fasta file. If you don't have this, skip this step
 # WARNING: before proceeding you should make sure each file contains only sequences of the same locus
 # and that these sequences are all in the forward reading direction
 
 mkdir 81_fant_raw
 
 # For each locus you have, run the following line
-mv yourlocusfile.fasta 8_fant_raw/gene.fasta
+mv yourlocusfile.fasta 81_fant_raw/gene.fasta
 # e.g.
-mv myCOIfile.fasta 8_fant_raw/COX1.fasta
+mv myCOIfile.fasta 81_fant_raw/COX1.fasta
 
 # You MUST use the exact file names that extract_genes.py outputs, e.g.:
 # ATP6.fasta, COX1.fasta, CYTB.fasta, ND1.fasta, ND4L.fasta etc
@@ -282,7 +296,7 @@ mv myCOIfile.fasta 8_fant_raw/COX1.fasta
 
 # FINAL PREP
 
-# If you have both fasta and genbank files, run this
+# If you have both fasta and genbank files TO ADD, run this
 
 mkdir 81_adnt_raw
 for file in 1_nt_raw/*
@@ -293,10 +307,10 @@ done
 # Clean up empty files
 find 81_adnt_raw/ -type f -empty -delete
 
-# Otherwise if you have genbank files only
+# Otherwise if you have genbank files only TO ADD
 mv 81_gbnt_raw 81_adnt_raw
 
-# Otherwise if you have fasta files only
+# Otherwise if you have fasta files only TO ADD
 mv 81_fant_raw 81_adnt_raw
 
 # TRANSLATION
