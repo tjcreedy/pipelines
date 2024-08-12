@@ -186,6 +186,8 @@ vsearch --usearch_global 3_mbc_concat.fasta -db otus.fasta -id 0.97 -uc reads_ot
 ## TAXONOMY CLASSIFICATION OF OTUS ##
 ##                                 ##
 
+# If you're interested in ASVs instead, just use ASVs in place of OTUs here.
+
 # Remember, classification is the sorting of your OTUs into taxonomic groups, generally to filter out OTUs that are not of
 # interest and/or to understand broad structures of your data. BLASTN+MEGAN or SINTAX are designed to approximately assign
 # taxonomy based on broad databases, and work on the principle that it is unlikely you will have exact matches at lower
@@ -193,11 +195,22 @@ vsearch --usearch_global 3_mbc_concat.fasta -db otus.fasta -id 0.97 -uc reads_ot
 # should never expect to be getting species-level matches from these methods, and you should be very wary of using low-level
 # matches from these methods as identifications.
 
-  # Using BLASTn vs Genbank NT - the output from this would then be loaded into MEGAN
+  # Using BLASTn vs Genbank NT - I recommend using my blast2taxonomy.py tool which implements an algorithm based on MEGAN but 
+    # all nicely run on the command line
+    # First run BLAST
 blastn -db <path to nt> -query otus.fasta -outfmt 5 -out otus_nt_blast.xml -num_threads 15 -evalue 0.001
-  # Go and load this xml into MEGAN and output the results as readName_to_taxonId 
-  # Then run this to get the identifications in a nice format
-get_NCBI_taxonomy.py -i otus_nt_blast_MEGAN.txt -l </path/to/>voglerlab/reference/NCBI_taxid2taxonomy.json -o <outname.txt>
+    # Then run blast2taxonomy.py - read the helpfile carefully and select your own version of these arguments, these are just 
+    # starting points. Check there's not a more recent version of the B2T database than listed below, and remember to create
+    # an ncbi_authentication file first. 
+python3 blast2taxonomy.py \
+   --blastresults otus_nt_blast.xml \
+   -i 85 -s 300 -l 300 -p megan \
+   --database /mbl/share/workspaces/groups/database/B2T_NCBIlookup_2024-03-21/B2T_NCBI_lookup.sqlite3 \
+   --ncbiauth <path to ncbi_authentication.txt> \
+   -w 100 -e 0.01 -t 10 -f 90 \
+   -z 500 -u 20 \
+   --outhits outhits.csv \
+   --outtaxonomy outtaxonomy.csv 2>&1 | tee -a log.txt
 
   # Using BLASTn vs your own reference set
 blastn -query otus.fasta -subject references.fasta -outfmt 6 -out otus_reference_blast.txt -num_threads 1 -evalue 0.001 -perc_identity 97
