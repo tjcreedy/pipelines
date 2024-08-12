@@ -205,7 +205,7 @@ blastn -db <path to nt> -query otus.fasta -outfmt 5 -out otus_nt_blast.xml -num_
 python3 blast2taxonomy.py \
    --blastresults otus_nt_blast.xml \
    -i 85 -s 300 -l 300 -p megan \
-   --database /mbl/share/workspaces/groups/database/B2T_NCBIlookup_2024-03-21/B2T_NCBI_lookup.sqlite3 \
+   --database /mbl/share/workspaces/groups/database/B2T_NCBIlookup_2024-03-21/B2T_NCBIlookup.sqlite3 \
    --ncbiauth <path to ncbi_authentication.txt> \
    -w 100 -e 0.01 -t 10 -f 90 \
    -z 500 -u 20 \
